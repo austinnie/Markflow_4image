@@ -1,0 +1,103 @@
+{
+  "name": "doc_generator",
+  "version": "1.0.0",
+  "description": "代码文档自动生成器，从 Python 代码自动生成 API 文档",
+  "tags": [],
+  "dependencies": [
+    "ast",
+    "inspect",
+    "pydoc",
+    "jinja2",
+    "markdown"
+  ],
+  "inputs": [
+    {
+      "name": "code_path",
+      "type": "string",
+      "description": "代码目录或文件路径 (必填)",
+      "required": true
+    },
+    {
+      "name": "doc_type",
+      "type": "string",
+      "description": "文档类型 (api/readme/all)，默认 all",
+      "required": false
+    },
+    {
+      "name": "output_format",
+      "type": "string",
+      "description": "输出格式 (md/html)，默认 md",
+      "required": false
+    },
+    {
+      "name": "project_name",
+      "type": "string",
+      "description": "项目名称，默认从目录名获取",
+      "required": false
+    },
+    {
+      "name": "project_description",
+      "type": "string",
+      "description": "项目描述",
+      "required": true
+    },
+    {
+      "name": "author",
+      "type": "string",
+      "description": "作者信息",
+      "required": true
+    },
+    {
+      "name": "include_tests",
+      "type": "boolean",
+      "description": "是否包含测试用例信息，默认 false",
+      "required": false
+    },
+    {
+      "name": "extract_classes",
+      "type": "boolean",
+      "description": "是否提取类结构，默认 true",
+      "required": false
+    },
+    {
+      "name": "extract_functions",
+      "type": "boolean",
+      "description": "是否提取函数签名，默认 true",
+      "required": false
+    },
+    {
+      "name": "generate_examples",
+      "type": "boolean",
+      "description": "是否生成使用示例，默认 true",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "name": "doc_path",
+      "description": "文档保存路径"
+    },
+    {
+      "name": "api_reference",
+      "description": "API 参考文档内容"
+    },
+    {
+      "name": "modules_summary",
+      "description": "模块摘要"
+    },
+    {
+      "name": "classes_summary",
+      "description": "类结构摘要"
+    },
+    {
+      "name": "functions_summary",
+      "description": "函数摘要"
+    },
+    {
+      "name": "usage_examples",
+      "description": "使用示例"
+    }
+  ],
+  "config": {},
+  "class_name": "DocGenerator"
+}
