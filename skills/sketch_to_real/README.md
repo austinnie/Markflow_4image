@@ -15,16 +15,49 @@
 python -m markflow.cli.commands execute sketch_to_real [参数]
 ```
 
-### 示例
 
+## 🚀 使用命令
 ```bash
-python -m markflow.cli.commands execute sketch_to_real
+cd E:\SD_OpenVINO\Markflow_4image
+
+# 1. 列出可用模型
+python skills/sketch_to_real/skill.py --list-models
+
+# 2. 列出可用风格
+python skills/sketch_to_real/skill.py --list-styles
+
+# 3. 基础用法（默认风格 realistic）
+python skills/sketch_to_real/skill.py --input sketch.jpg --output output/real.png
+
+# 4. 指定风格
+python skills/sketch_to_real/skill.py --input sketch.jpg --output output/cinematic.png --style cinematic
+
+# 5. 指定模型
+python skills/sketch_to_real/skill.py --input sketch.jpg --output output/real.png --model asianrealisticSdlife_v40.safetensors
+
+# 6. 自定义提示词（覆盖风格默认）
+python skills/sketch_to_real/skill.py --input sketch.jpg --output output/real.png --prompt "a beautiful woman, photorealistic" --negative "ugly, cartoon"
+
+# 7. 高质量输出
+python skills/sketch_to_real/skill.py --input sketch.jpg --output output/real.png --steps 50 --seed 42
+
+# 8. 使用 GPU
+python skills/sketch_to_real/skill.py --input sketch.jpg --output output/real.png --device cuda
 ```
 
-查看完整参数说明：
-
+## 📋 通过 MarkFlow CLI 调用
 ```bash
-python -m markflow.cli.commands info sketch_to_real
+# 基础用法
+python -m markflow.cli.commands execute sketch_to_real image_path="sketch.jpg" output_path="output/real.png"
+
+# 指定风格
+python -m markflow.cli.commands execute sketch_to_real image_path="sketch.jpg" output_path="output/cinematic.png" style=cinematic
+
+# 指定模型
+python -m markflow.cli.commands execute sketch_to_real image_path="sketch.jpg" output_path="output/real.png" model_name=asianrealisticSdlife_v40.safetensors
+
+# 自定义提示词
+python -m markflow.cli.commands execute sketch_to_real image_path="sketch.jpg" output_path="output/real.png" prompt="a beautiful woman, photorealistic" style=realistic
 ```
 
 ## 输出位置
