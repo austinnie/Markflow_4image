@@ -406,9 +406,124 @@ python scripts/generate_images.py --remove-clothes --input image.jpg \
 ```
 
 
+## 🎯 独立使用方式
+
+每个技能都可以独立运行，无需依赖 MarkFlow 框架。每个技能目录下都包含独立的 `skill.py` 文件，包含完整的实现逻辑和命令行入口。
+
+### 方式一：直接运行 skill.py
+
+每个 skill 目录下的 `skill.py` 都包含 `if __name__ == "__main__":` 入口，可以直接运行：
+
+```bash
+## 🎯 独立使用方式
+
+每个技能都可以独立运行，无需依赖 MarkFlow 框架。每个技能目录下都包含独立的 `skill.py` 文件，包含完整的实现逻辑和命令行入口。
+
+### 方式一：直接运行 skill.py（不进入目录）
+
+每个 skill 目录下的 `skill.py` 都包含 `if __name__ == "__main__":` 入口，可以直接从项目根目录运行：
+
+```bash
+# 从项目根目录直接运行（推荐）
+python skills/sd_image_generator/skill.py --prompt "beautiful landscape"
+
+# 奇幻角色转换
+python skills/fantasy_character/skill.py --image photo.jpg --type elf
+
+# 风格迁移
+python skills/style_transfer/skill.py --image photo.jpg --style anime
+
+# 移除衣服
+python skills/remove_clothes/skill.py --input image.jpg
+
+# ControlNet 姿态检测
+python skills/controlnet/skill.py --action detect_pose --image photo.jpg
+
+# 老照片修复
+python skills/old_photo_restore/skill.py --image old_photo.jpg
+
+# 动漫转真人
+python skills/anime_to_real/skill.py --image anime.jpg
+
+# 真人转动漫
+python skills/real_to_anime/skill.py --image photo.jpg
+```
+
+### 方式二：作为模块导入
+
+```bash
+# 直接导入 skill 类使用
+import sys
+from pathlib import Path
+
+# 添加技能目录到路径
+skill_path = Path("skills/sd_image_generator")
+sys.path.insert(0, str(skill_path))
+
+from skill import Sdimagegenerator
+
+# 创建实例并执行
+generator = Sdimagegenerator()
+result = generator.execute(
+    prompt="beautiful landscape",
+    model_name="xxx.safetensors",
+    width=768,
+    height=768
+)
+print(result)
+```
+
+### 方式三：通过 MarkFlow 框架（统一接口）
+
+```bash
+from markflow import MarkFlow
+
+flow = MarkFlow()
+result = flow.run(
+    skill="sd_image_generator",
+    prompt="beautiful landscape"
+)
+```
+
+
+## 📌 各技能独立运行命令
+
+| 技能 | 独立运行命令 |
+|------|-------------|
+| `sd_image_generator` | `python skills/sd_image_generator/skill.py -p "prompt"` |
+| `fantasy_character` | `python skills/fantasy_character/skill.py --image photo.jpg --type elf` |
+| `style_transfer` | `python skills/style_transfer/skill.py --image photo.jpg --style anime` |
+| `remove_clothes` | `python skills/remove_clothes/skill.py --input image.jpg` |
+| `controlnet` | `python skills/controlnet/skill.py --action detect_pose --image photo.jpg` |
+| `old_photo_restore` | `python skills/old_photo_restore/skill.py --image old_photo.jpg` |
+| `anime_to_real` | `python skills/anime_to_real/skill.py --image anime.jpg` |
+| `real_to_anime` | `python skills/real_to_anime/skill.py --image photo.jpg` |
+| `change_background` | `python skills/change_background/skill.py --image photo.jpg --background beach` |
+| `day_night_transfer` | `python skills/day_night_transfer/skill.py --image photo.jpg --target night` |
+
+## ✅ 独立使用的优点
+
+| 优点 | 说明 |
+|------|------|
+| **轻量** | 不需要加载整个 MarkFlow 框架 |
+| **快速测试** | 直接调试单个技能，无需进入目录 |
+| **灵活集成** | 可以集成到其他项目 |
+| **减少依赖** | 只加载该技能需要的依赖 |
+| **脚本化** | 可以写成独立脚本定时运行 |
+
+## ⚠️ 注意事项
+
+| 事项 | 说明 |
+|------|------|
+| **模型路径** | 独立运行时需要确保 `models_dir` 配置正确 |
+| **Python 路径** | 某些技能可能依赖 `markflow` 模块，需要设置 `PYTHONPATH` |
+| **依赖安装** | 确保已安装该技能所需的依赖包 |
+| **工作目录** | 建议在项目根目录执行，确保相对路径正确 |
+
+
 ##  🔧 环境配置
 
-###  依赖安装
+###  依赖安装 （每个skills单独有依赖，可以按提示安装，都安装到系统里，这样就所有skills共用一个环境，而不是venv）
 
 ```bash
 # 安装基础依赖
