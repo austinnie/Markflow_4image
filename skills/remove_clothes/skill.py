@@ -183,30 +183,52 @@ class ClothesRemover:
         logger.error(f"未找到模型: '{model_name}'")
         return None
 
-    def _load_pipeline(self, model_path: Path) -> bool:
-        """
-        加载纯 Inpaint Pipeline（不加载 ControlNet）
-        ControlNet 通过 control_image 参数传入
-        """
+    def _load_pipeline(self, model_path: Path, controlnet_type: str = None) -> bool:
+        """加载 Inpaint Pipeline（带 ControlNet 支持）"""
         try:
-            self.pipeline = StableDiffusionInpaintPipeline.from_single_file(
+            from diffusers import StableDiffusionControlNetInpaintPipeline, ControlNetModel
+            
+            # 如果指定了 controlnet_type，加载 ControlNet
+            if controlnet_type and CONTROLNET_SKILL_AVAILABLE:
+                # 获取 ControlNet 模型 ID
+                from skills.controlnet.skill import CONTROLNET_TYPES
+                info = CONTROLNET_TYPES.get(controlnet_type)
+                if info:
+                    controlnet_id = info["model_id"]
+                    logger.info(f"加载 ControlNet: {controlnet_id}")
+                    controlnet = ControlNetModel.from_pretrained(controlnet_id)
+                    
+                    pipe = StableDiffusionControlNetInpaintPipeline.from_single_file(
+                        str(model_path),
+                        controlnet=controlnet,
+                        torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
+                        safety_checker=None,
+                        requires_safety_checker=False,
+                    )
+                    pipe.to(self.device)
+                    pipe.enable_attention_slicing()
+                    self.pipeline = pipe
+                    self.current_model = model_path.name
+                    return True
+            
+            # 没有 ControlNet，使用普通 Inpaint
+            pipe = StableDiffusionInpaintPipeline.from_single_file(
                 str(model_path),
                 torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
                 safety_checker=None,
                 requires_safety_checker=False,
             )
-            self.pipeline.to(self.device)
-            self.pipeline.enable_attention_slicing()
-
+            pipe.to(self.device)
+            pipe.enable_attention_slicing()
+            self.pipeline = pipe
             self.current_model = model_path.name
-            logger.info(f"  模型加载成功: {self.current_model}")
             return True
-
+            
         except Exception as e:
-            logger.error(f"  模型加载失败: {e}")
+            logger.error(f"模型加载失败: {e}")
             return False
-
-    def _load_model(self, model_name: str) -> bool:
+            
+    def _load_model(self, model_name: str, controlnet_type: str = None) -> bool:
         """加载模型（通过名称）"""
         if not DIFFUSERS_AVAILABLE:
             logger.error("diffusers 未安装")
@@ -218,9 +240,9 @@ class ClothesRemover:
             return False
 
         logger.info(f"加载模型: {model_path}")
-        return self._load_pipeline(model_path)
+        return self._load_pipeline(model_path, controlnet_type)
 
-    def _load_model_from_path(self, model_path: str) -> bool:
+    def _load_model_from_path(self, model_path: str, controlnet_type: str = None) -> bool:
         """加载模型（通过路径）"""
         if not DIFFUSERS_AVAILABLE:
             logger.error("diffusers 未安装")
@@ -231,7 +253,7 @@ class ClothesRemover:
             return False
 
         logger.info(f"从路径加载模型: {model_path}")
-        return self._load_pipeline(Path(model_path))
+        return self._load_pipeline(Path(model_path), controlnet_type)
 
     # ==================== 遮罩生成（使用分割模块） ====================
 
@@ -463,17 +485,18 @@ class ClothesRemover:
             use_controlnet = kwargs.get('use_controlnet', self.config.get('use_controlnet', True))
 
             # 2. 加载模型（纯 Inpaint Pipeline，不加载 ControlNet）
+            # 加载模型时传入 controlnet_type
             if model_path:
-                if not self._load_model_from_path(model_path):
+                if not self._load_model_from_path(model_path, controlnet_type if use_controlnet else None):
                     error_msg = f"❌ 无法加载模型: {model_path}"
                     print(error_msg)
                     return {"status": "error", "error": error_msg}
             else:
                 model_name = model_name or self.config.get('default_model', 'zenityXmix.inpainting.safetensors')
                 if self.pipeline is None or self.current_model != model_name:
-                    if not self._load_model(model_name):
+                    if not self._load_model(model_name, controlnet_type if use_controlnet else None):
                         return {"status": "error", "error": f"无法加载模型: {model_name}"}
-
+                        
             # 3. 获取生成参数
             prompt = kwargs.get('prompt')
             if prompt is None:
