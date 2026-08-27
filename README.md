@@ -166,6 +166,246 @@ python scripts/markflow_gui.py
 python -m markflow.gui
 ```
 
+## 🖼️ 批量图片生成器
+scripts/generate_images.py 是一个强大的批量图片生成工具，支持从分层 Prompt 配置自动组合生成大量图片。
+
+工作原理
+自动扫描 scripts/configs/prompts/ 目录下的所有 .py 文件
+
+解析风格：每个文件定义了一个 STYLE 字典，包含 subjects（主题）、styles（风格）、moods（情绪）
+
+自动组合：将三层组合生成完整的 Prompt
+
+调用 sd_image_generator 技能生成图片
+
+
+## 当前配置
+
+| 统计项 | 数量 |
+|--------|------|
+| 风格文件 | 94 个 |
+| 生成方案 | 13,810 种 |
+| 覆盖类型 | 国画、动漫、机甲、线稿、生肖、珠宝、白描、人物、动物、城市、军事等 |
+
+---
+
+## 风格分类详情
+
+| 分类 | 风格数量 | 代表风格 |
+|------|----------|----------|
+| 国画/水墨 | 12 | `chinese_ink_animals`、`chinese_landscape_master`、`chinese_ink_bird` |
+| 白描线稿 | 10 | `classical_chinese_lineart`、`countryside_ink_lineart`、`hermit_ink_lineart` |
+| 动漫/二次元 | 6 | `anime_figure_girl`、`anime_greyscale_portrait`、`autumn_anime_portrait` |
+| 机甲/机械 | 18 | `mecha_sketch`、`gundam_sketch`、`mecha_girl_ultra_expansion`、`transformers_sketch` |
+| 动物线稿 | 12 | `bird_sketch`、`cat_sketch`、`dragon_sketch`、`tiger_sketch`、`horse_sketch` |
+| 十二生肖 | 8 | `rat_sketch`、`ox_sketch`、`tiger_sketch`、`rabbit_sketch`、`dragon_sketch` 等 |
+| 人像/人物 | 8 | `human_portrait_sketch`、`sketch_fashion_designer`、`pencil_sketch_02_anatomy` |
+| 铅笔素描 | 9 | `pencil_sketch_01_fashion`、`pencil_sketch_04_atmosphere`、`pencil_sketch_05_minimal` |
+| 设计/蓝图 | 6 | `watch_blueprint`、`jewelry_blueprint`、`bag_blueprint`、`mecha_blueprint` |
+| 风景/环境 | 5 | `city_sketch`、`beach_resort_swimwear`、`nature_outdoor_girl` |
+| 其他 | 10 | `calligraphy_art`、`gallery_elegant`、`nuclear_01_sketch`、`transformers_optimus_prime` |
+| **合计** | **94** | |
+
+---
+
+## 组合生成说明
+
+每个风格文件包含三层组合：
+
+| 层级 | 说明 | 示例 |
+|------|------|------|
+| **Subjects** | 主题/主体 | `flying swallow, dynamic wings` |
+| **Styles** | 风格/画风 | `minimalist line art`、`sketch style` |
+| **Moods** | 情绪/氛围 | `peaceful, calm`、`dramatic, intense` |
+
+**组合公式**：`Subjects × Styles × Moods = 生成方案数`
+
+例如 `bird_sketch`：10 × 3 × 4 = **120 种方案**
+
+
+cd Markflow_4image
+```bash
+# 1. 列出所有方案（查看可用风格和组合数）
+python scripts/generate_images.py --list
+python scripts/generate_images.py --folder 极简飞鸟线稿 --list
+python scripts/generate_images.py --style bird_sketch --list
+
+# 2. 生成所有方案（谨慎！13810 张）
+python scripts/generate_images.py --all
+
+# 3. 生成指定 ID 的方案
+python scripts/generate_images.py --id 1
+python scripts/generate_images.py --ids 1,3,5,10
+
+
+# 4. 按风格名称筛选
+python scripts/generate_images.py --style bird_sketch --all
+python scripts/generate_images.py --style bird_sketch --id 1
+
+# 5. 按文件夹名称筛选生成
+python scripts/generate_images.py --folder 极简飞鸟线稿 --all
+
+# 6. 限制每个风格的组合数
+python scripts/generate_images.py --limit 10 --list
+python scripts/generate_images.py --style bird_sketch --limit 5 --all
+
+# 7. 限制总生成数量（取前 N 个方案）
+python scripts/generate_images.py --total 10 --all
+python scripts/generate_images.py --folder 极简飞鸟线稿 --total 5 --all
+
+# 8. 组合使用
+python scripts/generate_images.py --style bird_sketch --limit 5 --total 10 --all
+
+# 执行的效果：
+python scripts/generate_images.py --folder 极简飞鸟线稿 --all
+🔍 自动发现 prompts 目录: E:\SD_OpenVINO\Markflow_4image\scripts\configs\prompts
+📂 扫描目录: E:\SD_OpenVINO\Markflow_4image\scripts\configs\prompts
+   📁 文件夹过滤: 极简飞鸟线稿
+  ✓ animals\bird_sketch.py -> bird_sketch
+  ✓ sketch\bird_sketch.py -> bird_sketch
+
+📋 加载的风格列表 (1 个):
+    1. bird_sketch
+      文件夹: 极简飞鸟线稿 | 主题: 10 | 风格: 3 | 情绪: 4 | 组合: 120/120
+
+💾 风格列表已保存到: output\styles_list.txt
+
+✅ 从目录加载了 1 个风格，展开为 120 个生成方案
+
+进度: 1/120
+
+============================================================
+   🔥 第 1 次调用 generate_one
+   [1/120] bird_sketch_1
+============================================================
+```
+
+### 🔧 参数说明
+
+| 参数 | 类型 | 说明 | 示例 |
+|------|------|------|------|
+| `--config` | 路径 | 使用 JSON 配置文件 | `--config configs/girls_config.json` |
+| `--source` | 路径 | 指定 Python prompt 文件/目录 | `--source configs/prompts/animals` |
+| `--list` | 标志 | 列出所有已加载的方案（不生成） | `--list` |
+| `--all` | 标志 | **触发生成**，生成所有方案 | `--all` |
+| `--total` | 数字 | **配合 `--all` 使用**，限制总生成数量，取前 N 个方案 | `--total 5` |
+| `--id` | 数字 | 生成指定 ID 的方案 | `--id 1` |
+| `--ids` | 字符串 | 生成多个方案，用逗号分隔 | `--ids 1,3,5` |
+| `--style` | 名称 | 只加载指定风格 | `--style bird_sketch` |
+| `--folder` | 名称 | 只加载指定文件夹 | `--folder 极简飞鸟线稿` |
+| `--limit` | 数字 | **限制每个风格**最多生成 N 个组合 | `--limit 10` |
+| `--help` | 标志 | 显示帮助信息 | `--help` |
+
+### 📌 参数组合说明
+
+| 组合命令 | 效果 |
+|----------|------|
+| `--all` | 生成所有方案（如 13,810 张） |
+| `--all --total 10` | 生成前 10 张 |
+| `--limit 5 --all` | 每个风格最多生成 5 张，生成所有风格 |
+| `--limit 5 --all --total 10` | 每个风格最多 5 张，但总共只取前 10 张 |
+| `--folder 极简飞鸟线稿 --all` | 生成该文件夹下所有风格的所有方案 |
+| `--folder 极简飞鸟线稿 --limit 3 --all` | 该文件夹下每个风格生成 3 张 |
+| `--folder 极简飞鸟线稿 --limit 3 --all --total 5` | 该文件夹下每个风格最多 3 张，总共取前 5 张 |
+
+### ⚠️ 重要说明
+
+| 参数 | 是否触发生成 | 说明 |
+|------|-------------|------|
+| `--all` | ✅ **是** | 生成所有方案 |
+| `--id` / `--ids` | ✅ **是** | 生成指定方案 |
+| `--total` | ❌ **否** | **必须配合 `--all` 使用**，单独使用无效 |
+| `--limit` | ❌ **否** | **必须配合 `--all` 使用**，单独使用无效 |
+| `--list` | ❌ **否** | 只列出方案，不生成 |
+| `--style` / `--folder` | ❌ **否** | 只做筛选，需配合 `--all` 或 `--id` 使用 |
+
+**正确用法：**
+
+```bash
+# ✅ 正确：生成前 5 张
+python scripts/generate_images.py --folder 极简飞鸟线稿 --limit 10 --all --total 5
+
+# ❌ 错误：只加载方案，不生成（缺少 --all）
+python scripts/generate_images.py --folder 极简飞鸟线稿 --limit 10 --total 5
+
+# ✅ 正确：生成所有方案
+python scripts/generate_images.py --folder 极简飞鸟线稿 --all
+
+# ✅ 正确：生成指定 ID
+python scripts/generate_images.py --folder 极简飞鸟线稿 --id 1
+
+
+# 风格文件示例
+scripts/configs/prompts/animals/bird_sketch.py:
+```
+
+##  提示词的分层结构
+
+```python
+STYLE = {
+    "bird_sketch": {
+        "folder": "极简飞鸟线稿",
+        "subjects": [
+            "flying swallow, dynamic wings",
+            "eagle perched, majestic gaze",
+            "flock of sparrows, chaotic flight",
+            # ... 更多主题
+        ],
+        "styles": [
+            "minimalist line art",
+            "sketch style",
+            "pencil drawing",
+        ],
+        "moods": [
+            "peaceful, calm",
+            "dramatic, intense",
+            "dreamy, ethereal",
+        ]
+    }
+}
+```
+
+## 重要说明
+和其他skill组合使用 （如remove_clothes这个SKILLS， 其他SKILLS也可以加到代码中，
+或者图片处理完成后再用次图片作为其他SKILLS的输入）
+
+### 👕 衣服移除参数
+
+| 参数 | 类型 | 说明 | 示例 |
+|------|------|------|------|
+| `--remove-clothes` | 标志 | 进入衣服移除模式 | `--remove-clothes` |
+| `--input` | 路径 | 输入图片路径或目录 | `--input image.jpg` |
+| `-o, --output` | 路径 | 输出路径（单张）或输出目录（批量） | `-o output.jpg` |
+| `--batch` | 标志 | 批量模式 | `--batch` |
+| `--prompt` | 文本 | 生成提示词 | `--prompt "nude, beautiful skin"` |
+| `--negative` | 文本 | 负面提示词 | `--negative "clothes, ugly"` |
+| `--strength` | 浮点数 | 重绘强度 (0.0-1.0, 默认: 0.85) | `--strength 0.85` |
+| `--steps` | 数字 | 迭代步数 (默认: 30) | `--steps 30` |
+| `--seed` | 数字 | 随机种子 | `--seed 42` |
+| `--device` | 设备 | 设备 (cpu/cuda, 默认: cpu) | `--device cuda` |
+| `--save-mask` | 标志 | 保存遮罩 | `--save-mask` |
+
+## 👕 衣服移除用法示例
+
+```bash
+# 单张图片移除衣服
+python scripts/generate_images.py --remove-clothes --input image.jpg
+
+# 指定输出路径
+python scripts/generate_images.py --remove-clothes --input image.jpg -o output.jpg
+
+# 批量处理目录
+python scripts/generate_images.py --remove-clothes --input ./images/ --batch
+
+# 批量处理并指定输出目录
+python scripts/generate_images.py --remove-clothes --input ./images/ --batch -o ./output/
+
+# 高级参数
+python scripts/generate_images.py --remove-clothes --input image.jpg \
+    --prompt "nude, beautiful skin" --strength 0.85 --steps 30 --device cuda
+```
+
+
 ##  🔧 环境配置
 
 ###  依赖安装
@@ -189,6 +429,7 @@ Markflow_4image
 models/
 ├── sd-v1-5/
 │   ├── zenityXmix.inpainting.safetensors
+│   ├── anytimeRealistic_v10.safetensors
 │   └── ...
 ├── controlnet/
 │   └── ...
@@ -246,6 +487,16 @@ Markflow_4image/
 │   ├── sketch_to_real/
 │   ├── style_transfer/
 │   └── weather_transfer/
+├── scripts/               # 工具脚本
+│   ├── generate_images.py # ⭐ 批量图片生成器
+│   ├── configs/
+│   │   └── prompts/       # ⭐ 94 个风格配置文件
+│   │       ├── animals/
+│   │       ├── anime/
+│   │       ├── chinese/
+│   │       ├── mecha/
+│   │       └── ...
+│   └── markflow_gui.py
 ├── scripts/               # 工具脚本
 ├── output/                # 输出目录
 ├── .gitignore

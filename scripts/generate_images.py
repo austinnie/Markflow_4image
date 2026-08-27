@@ -516,14 +516,17 @@ class SDImageGenerator:
         
         print(f"\n💾 风格列表已保存到: {output_file}")
     
-    def generate_one(self, scheme, index: int = None):
+    def generate_one(self, scheme, index: int = None, total: int = None):
         """生成单张图片"""
         self._call_count += 1
+        
+        if total is None:
+            total = len(self.schemes)
         
         if index is not None:
             print(f"\n{'='*60}")
             print(f"   🔥 第 {self._call_count} 次调用 generate_one")
-            print(f"   [{index}/{len(self.schemes)}] {scheme['name']}")
+            print(f"   [{index}/{total}] {scheme['name']}")
             print('='*60)
         else:
             print(f"\n{'='*60}")
@@ -812,6 +815,7 @@ class SDImageGenerator:
   --style NAME        只加载指定风格
   --folder NAME       只加载指定文件夹
   --limit N           每个风格最多生成 N 个组合
+  --total N           总共生成 N 张图片（取前 N 个）
   --config PATH       使用 JSON 配置文件
   --source PATH       指定 Python prompt 目录
 
@@ -853,8 +857,33 @@ class SDImageGenerator:
             self.generate_by_id(ids)
             return
         
+        if args.total and not args.all:
+            total = min(args.total, len(self.schemes))
+            print(f"\n📊 共 {len(self.schemes)} 个方案，将生成前 {total} 个")
+            print("="*60)
+            success = 0
+            for idx, s in enumerate(self.schemes[:total], 1):
+                print(f"\n进度: {idx}/{total}")
+                if self.generate_one(s, idx, total):  # ← 传入 total
+                    success += 1
+                time.sleep(0.5)
+            print(f"\n✅ 完成！成功 {success}/{total} 张")
+            return
+
         if args.all:
-            self.generate_all()
+            if args.total:
+                total = min(args.total, len(self.schemes))
+                print(f"\n📊 共 {len(self.schemes)} 个方案，将生成前 {total} 个")
+                print("="*60)
+                success = 0
+                for idx, s in enumerate(self.schemes[:total], 1):
+                    print(f"\n进度: {idx}/{total}")
+                    if self.generate_one(s, idx, total):  # ← 传入 total
+                        success += 1
+                    time.sleep(0.5)
+                print(f"\n✅ 完成！成功 {success}/{total} 张")
+            else:
+                self.generate_all()
             return
 
 
@@ -876,6 +905,7 @@ def main():
     parser.add_argument("--style", type=str, help="只加载指定风格（如 bird_sketch）")
     parser.add_argument("--folder", type=str, help="只加载指定文件夹（如 极简飞鸟线稿）")
     parser.add_argument("--limit", type=int, help="每个风格最多生成 N 个组合")
+    parser.add_argument("--total", type=int, help="总共生成 N 张图片（取前 N 个）")
     
     # ========== 衣服移除参数 ==========
     parser.add_argument("--remove-clothes", action="store_true", help="进入衣服移除模式")
