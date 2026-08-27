@@ -1,54 +1,108 @@
 {
   "name": "ControlNet",
-  "version": "1.0.0",
-  "description": "提供姿态检测和 ControlNet 控制能力，支持 OpenPose、Canny、Depth 等多种 ControlNet 类型",
-  "tags": ["controlnet", "pose", "depth", "canny", "openpose"],
+  "version": "2.0.0",
+  "description": "提供姿态检测和 ControlNet 控制能力，支持 10 种 ControlNet 类型，Pipeline 生图，批量处理",
+  "tags": ["controlnet", "pose", "depth", "canny", "openpose", "seg", "scribble"],
   "dependencies": [
     "diffusers",
     "controlnet-aux",
     "opencv-python-headless",
     "torch",
     "Pillow",
-    "numpy"
+    "numpy",
+    "gradio"
   ],
   "inputs": [
     {
       "name": "action",
       "type": "string",
-      "description": "操作类型: status, list_types, detect_pose, load_pipeline",
+      "description": "操作类型: status, list_types, detect_pose, load_pipeline, generate, batch_detect, batch_generate, gui",
       "required": false,
       "default": "status"
     },
     {
       "name": "image",
       "type": "string",
-      "description": "输入图片路径 (detect_pose 操作)",
+      "description": "输入图片路径 (detect_pose/generate)",
       "required": false
     },
     {
-      "name": "image_path",
+      "name": "images",
       "type": "string",
-      "description": "输入图片路径 (detect_pose 操作, 同 image)",
+      "description": "批量图片路径，逗号分隔 (batch_detect/batch_generate)",
+      "required": false
+    },
+    {
+      "name": "prompt",
+      "type": "string",
+      "description": "生成提示词 (generate)",
+      "required": false
+    },
+    {
+      "name": "prompts",
+      "type": "string",
+      "description": "批量提示词，用 || 分隔 (batch_generate)",
       "required": false
     },
     {
       "name": "output_path",
       "type": "string",
-      "description": "输出图片路径 (detect_pose 操作)",
+      "description": "输出图片路径 (detect_pose/generate)",
+      "required": false
+    },
+    {
+      "name": "output_dir",
+      "type": "string",
+      "description": "输出目录 (batch_detect/batch_generate)",
       "required": false
     },
     {
       "name": "model_path",
       "type": "string",
-      "description": "SD 模型路径 (load_pipeline 操作)",
+      "description": "SD 模型路径 (load_pipeline/generate)",
       "required": false
     },
     {
       "name": "controlnet_type",
       "type": "string",
-      "description": "ControlNet 类型: openpose, openpose_full, dwpose, canny, hed, lineart, depth, normal, mlsd",
+      "description": "ControlNet 类型: openpose, openpose_full, dwpose, canny, hed, lineart, depth, normal, mlsd, seg, scribble",
       "required": false,
       "default": "openpose"
+    },
+    {
+      "name": "negative_prompt",
+      "type": "string",
+      "description": "负面提示词 (generate)",
+      "required": false,
+      "default": ""
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "推理步数 (generate)",
+      "required": false,
+      "default": 20
+    },
+    {
+      "name": "cfg_scale",
+      "type": "number",
+      "description": "CFG 尺度 (generate)",
+      "required": false,
+      "default": 7.5
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子 (generate, -1 随机)",
+      "required": false,
+      "default": -1
+    },
+    {
+      "name": "controlnet_strength",
+      "type": "number",
+      "description": "ControlNet 控制强度 0.0-1.0 (generate)",
+      "required": false,
+      "default": 1.0
     },
     {
       "name": "device",
@@ -56,6 +110,20 @@
       "description": "设备: cpu 或 cuda",
       "required": false,
       "default": "cpu"
+    },
+    {
+      "name": "share",
+      "type": "boolean",
+      "description": "Gradio 公开链接 (gui)",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "port",
+      "type": "integer",
+      "description": "Gradio 端口 (gui)",
+      "required": false,
+      "default": 7860
     }
   ],
   "outputs": [
@@ -65,7 +133,11 @@
     },
     {
       "name": "output_path",
-      "description": "生成的 ControlNet 控制图路径 (detect_pose 操作)"
+      "description": "生成的图片路径 (detect_pose/generate)"
+    },
+    {
+      "name": "control_path",
+      "description": "控制图路径 (generate)"
     },
     {
       "name": "controlnet_type",
@@ -73,16 +145,33 @@
     },
     {
       "name": "types",
-      "description": "所有支持的 ControlNet 类型列表 (list_types 操作)"
+      "description": "所有支持的 ControlNet 类型列表 (list_types)"
     },
     {
       "name": "dependencies",
-      "description": "依赖检查状态 (status 操作)"
+      "description": "依赖检查状态 (status)"
+    },
+    {
+      "name": "total",
+      "description": "批量总数 (batch_detect/batch_generate)"
+    },
+    {
+      "name": "success",
+      "description": "批量成功数 (batch_detect/batch_generate)"
+    },
+    {
+      "name": "failed",
+      "description": "批量失败数 (batch_detect/batch_generate)"
+    },
+    {
+      "name": "results",
+      "description": "批量结果列表 (batch_detect/batch_generate)"
     }
   ],
   "config": {
     "max_size": 512,
-    "controlnet_strength": 0.8
+    "controlnet_strength": 0.8,
+    "default_model_path": null
   },
   "class_name": "Controlnet"
 }
