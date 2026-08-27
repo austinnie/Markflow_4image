@@ -1,0 +1,34 @@
+# Python ?存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 虚??境
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# ?出目?（保留目???，忽略文件）
+skills/*/output/*
+!skills/*/output/.gitkeep
+
+# 模型文件（大文件）
+*.safetensors
+*.ckpt
+*.pth
+*.bin
+
+# ?片?出（如果不想提交?片）
+*.jpg
+*.png
+*.mp3
+*.txt
+
+# 日志
+*.log

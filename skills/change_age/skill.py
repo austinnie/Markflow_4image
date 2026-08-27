@@ -1,0 +1,346 @@
+# skills/change_age/skill.py
+"""
+改变年龄 Skill - 让人物变老或变年轻
+使用 OpenPose ControlNet 保持姿态，Inpaint 重绘面部和皮肤
+"""
+
+import os
+import sys
+import json
+import random
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+try:
+    import torch
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFilter
+    import cv2
+    from diffusers import StableDiffusionInpaintPipeline
+    DIFFUSERS_AVAILABLE = True
+except ImportError:
+    DIFFUSERS_AVAILABLE = False
+    logger.warning("diffusers 未安装")
+
+try:
+    from skills.controlnet.skill import Controlnet
+    CONTROLNET_AVAILABLE = True
+except ImportError:
+    CONTROLNET_AVAILABLE = False
+    logger.warning("ControlNet 技能不可用")
+
+try:
+    from ultralytics import YOLO
+    YOLO_AVAILABLE = True
+except ImportError:
+    YOLO_AVAILABLE = False
+    logger.warning("YOLO 未安装")
+
+AGE_PROMPTS = {
+    "young": {
+        "prompt": "young person, youthful face, smooth skin, youthful appearance, teenager, 20 years old, beautiful, masterpiece",
+        "negative": "old, aged, wrinkles, gray hair, elderly, mature"
+    },
+    "middle": {
+        "prompt": "middle aged person, mature face, distinguished, 40 years old, professional, beautiful, masterpiece",
+        "negative": "young, teenager, old, elderly, wrinkled"
+    },
+    "old": {
+        "prompt": "elderly person, aged face, wrinkles, gray hair, 70 years old, wise, distinguished, masterpiece",
+        "negative": "young, smooth skin, teenage, youthful"
+    },
+    "child": {
+        "prompt": "child, young face, innocent, cute, 10 years old, beautiful, masterpiece",
+        "negative": "adult, old, aged, wrinkles, mature"
+    }
+}
+
+
+class ChangeAge:
+    """改变年龄技能"""
+
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or {}
+        self.name = "change_age"
+        self.version = "1.0.0"
+
+        self.skill_dir = Path(__file__).parent.absolute()
+        self.project_root = self.skill_dir.parent.parent.parent
+        self.output_dir = self.skill_dir / "output"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        self.models_dir = Path(self.config.get('models_dir', self.project_root / 'models'))
+        self.device = self.config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
+
+        self.pipeline = None
+        self.current_model = None
+        self.controlnet_skill = None
+        self._yolo_model = None
+
+        if CONTROLNET_AVAILABLE:
+            try:
+                self.controlnet_skill = Controlnet(config={'device': self.device, 'max_size': 512})
+                logger.info("  ControlNet 技能初始化成功")
+            except Exception as e:
+                logger.warning(f"  ControlNet 技能初始化失败: {e}")
+
+        self._setup_logging()
+        self._setup_config()
+
+        logger.info(f"ChangeAge 初始化完成")
+        logger.info(f"  设备: {self.device}")
+        logger.info(f"  年龄模式: {list(AGE_PROMPTS.keys())}")
+
+    def _setup_logging(self):
+        log_level = self.config.get('log_level', 'INFO')
+        logging.basicConfig(level=getattr(logging, log_level.upper()),
+                           format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    def _setup_config(self):
+        defaults = {
+            'default_model': 'zenityXmix.inpainting.safetensors',
+            'default_steps': 30,
+            'default_strength': 0.65,
+            'default_age': 'young',
+            'default_negative': 'ugly, deformed, bad anatomy, extra limbs, blurry, low quality',
+        }
+        for key, value in defaults.items():
+            if key not in self.config:
+                self.config[key] = value
+        Path(self.config.get('output_dir', str(self.output_dir))).mkdir(parents=True, exist_ok=True)
+
+    def _find_model(self, model_name: str) -> Optional[Path]:
+        return Path(self.models_dir / "sd-v1-5" / model_name) if model_name else None
+
+    def _load_pipeline(self, model_path: Path) -> bool:
+        try:
+            self.pipeline = StableDiffusionInpaintPipeline.from_single_file(
+                str(model_path),
+                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
+                safety_checker=None,
+                requires_safety_checker=False,
+            )
+            self.pipeline.to(self.device)
+            self.pipeline.enable_attention_slicing()
+            self.current_model = model_path.name
+            return True
+        except Exception as e:
+            logger.error(f"  模型加载失败: {e}")
+            return False
+
+    def _load_model(self, model_name: str) -> bool:
+        model_path = self._find_model(model_name)
+        if not model_path or not model_path.exists():
+            logger.error(f"模型不存在: {model_name}")
+            return False
+        return self._load_pipeline(model_path)
+
+    def _get_yolo_model(self):
+        if not YOLO_AVAILABLE:
+            return None
+        if self._yolo_model is None:
+            try:
+                self._yolo_model = YOLO("yolov8n-seg.pt")
+                logger.info("  YOLO 加载成功")
+            except Exception as e:
+                logger.warning(f"  YOLO 加载失败: {e}")
+                self._yolo_model = False
+        return self._yolo_model
+
+    def _generate_face_mask(self, image: Image.Image) -> Optional[Image.Image]:
+        """生成面部 + 颈部遮罩（年龄变化需要覆盖的区域）"""
+        h, w = image.size[1], image.size[0]
+
+        yolo = self._get_yolo_model()
+        if not yolo:
+            return None
+
+        try:
+            results = yolo(image, verbose=False)
+            if len(results) == 0 or results[0].masks is None:
+                return None
+
+            masks = results[0].masks.data.cpu().numpy()
+            combined = np.zeros((h, w), dtype=np.uint8)
+            for m in masks:
+                m_resized = cv2.resize(m, (w, h))
+                combined = np.maximum(combined, (m_resized > 0.5).astype(np.uint8) * 255)
+
+            coords = np.where(combined > 0)
+            if len(coords[0]) == 0:
+                return None
+
+            y_min, y_max = coords[0].min(), coords[0].max()
+            body_h = y_max - y_min
+
+            # 面部 + 颈部区域（覆盖年龄变化区域）
+            face_top = y_min
+            face_bottom = y_min + int(body_h * 0.38)
+
+            x_min, x_max = coords[1].min(), coords[1].max()
+            body_w = x_max - x_min
+            face_left = x_min + int(body_w * 0.08)
+            face_right = x_max - int(body_w * 0.08)
+
+            face_mask = np.zeros_like(combined)
+            face_mask[face_top:face_bottom, face_left:face_right] = combined[face_top:face_bottom, face_left:face_right]
+
+            kernel = np.ones((10, 10), np.uint8)
+            face_mask = cv2.dilate(face_mask, kernel, iterations=2)
+            face_mask = cv2.GaussianBlur(face_mask, (15, 15), 0)
+
+            if np.sum(face_mask > 0) < 100:
+                return None
+
+            logger.info(f"  面部遮罩生成完成")
+            return Image.fromarray(face_mask, mode="L")
+
+        except Exception as e:
+            logger.warning(f"  面部遮罩生成失败: {e}")
+            return None
+
+    def _generate_pose_image(self, image: Image.Image) -> Optional[Image.Image]:
+        if self.controlnet_skill is None:
+            return None
+        try:
+            result = self.controlnet_skill.execute(
+                action='detect_pose',
+                image=image,
+                controlnet_type='openpose',
+                output_path=None
+            )
+            if result['status'] == 'success':
+                output_path = result['output_path']
+                if os.path.exists(output_path):
+                    return Image.open(output_path)
+            return None
+        except Exception as e:
+            logger.warning(f"  姿态图生成失败: {e}")
+            return None
+
+    def _resize_image(self, image: Image.Image) -> tuple:
+        w, h = image.size
+        max_size = 768
+        if max(w, h) > max_size:
+            ratio = max_size / max(w, h)
+            new_w, new_h = int(w * ratio), int(h * ratio)
+            image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        return image, image.size
+
+    def execute(self, **kwargs) -> Dict[str, Any]:
+        start_time = time.time()
+        logger.info(f"执行技能: {self.name}")
+
+        try:
+            image_path = kwargs.get('image_path')
+            if not image_path or not os.path.exists(image_path):
+                return {"status": "error", "error": f"图片不存在: {image_path}"}
+
+            age = kwargs.get('age', self.config.get('default_age', 'young'))
+            if age not in AGE_PROMPTS:
+                return {"status": "error", "error": f"未知年龄模式: {age}，可用: {list(AGE_PROMPTS.keys())}"}
+
+            age_config = AGE_PROMPTS[age]
+            prompt = kwargs.get('prompt') or age_config['prompt']
+            negative_prompt = kwargs.get('negative_prompt') or age_config.get('negative', self.config.get('default_negative'))
+
+            strength = kwargs.get('strength', self.config.get('default_strength', 0.65))
+            steps = kwargs.get('steps', self.config.get('default_steps', 30))
+            seed = kwargs.get('seed', -1)
+            model_name = kwargs.get('model_name', self.config.get('default_model'))
+
+            if not self._load_model(model_name):
+                return {"status": "error", "error": f"无法加载模型: {model_name}"}
+
+            image = Image.open(image_path).convert("RGB")
+            image, original_size = self._resize_image(image)
+
+            logger.info(f"年龄模式: {age}")
+            logger.info(f"提示词: {prompt[:80]}...")
+
+            face_mask = self._generate_face_mask(image)
+            if face_mask is None:
+                h, w = image.size[1], image.size[0]
+                face_mask = Image.new("L", (w, h), 0)
+                draw = ImageDraw.Draw(face_mask)
+                cx, cy = w // 2, h // 3
+                draw.ellipse((cx - w//4, cy - h//3, cx + w//4, cy + h//3), fill=255)
+                face_mask = face_mask.filter(ImageFilter.GaussianBlur(radius=15))
+
+            control_image = self._generate_pose_image(image)
+
+            if seed == -1:
+                seed = random.randint(0, 2**32 - 1)
+            generator = torch.Generator(device=self.device).manual_seed(seed)
+
+            current_size = image.size
+            pipeline_kwargs = {
+                'prompt': prompt,
+                'negative_prompt': negative_prompt if negative_prompt else None,
+                'image': image,
+                'mask_image': face_mask,
+                'strength': strength,
+                'num_inference_steps': steps,
+                'guidance_scale': 7.5,
+                'generator': generator,
+                'width': current_size[0],
+                'height': current_size[1],
+            }
+            if control_image is not None:
+                pipeline_kwargs['control_image'] = control_image
+
+            result = self.pipeline(**pipeline_kwargs).images[0]
+
+            if kwargs.get('output_path'):
+                output_path = kwargs['output_path']
+            else:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_path = str(self.output_dir / f"{Path(image_path).stem}_age_{age}_{timestamp}.png")
+
+            os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+            result.save(output_path)
+
+            return {
+                "status": "success",
+                "output_path": output_path,
+                "age": age,
+                "generation_time": f"{time.time() - start_time:.2f}s",
+                "parameters": {"strength": strength, "steps": steps, "seed": seed}
+            }
+
+        except Exception as e:
+            logger.error(f"执行失败: {e}")
+            return {"status": "error", "error": str(e)}
+
+    def list_ages(self) -> Dict[str, Any]:
+        return {"status": "success", "ages": list(AGE_PROMPTS.keys())}
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="改变年龄工具")
+    parser.add_argument("--input", "-i", required=True, help="输入图片路径")
+    parser.add_argument("--output", "-o", help="输出路径")
+    parser.add_argument("--age", "-a", default="young",
+                        choices=list(AGE_PROMPTS.keys()), help="年龄模式")
+    parser.add_argument("--strength", type=float, default=0.65, help="重绘强度")
+    parser.add_argument("--steps", type=int, default=30, help="迭代步数")
+    parser.add_argument("--seed", type=int, default=-1, help="随机种子")
+    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
+
+    args = parser.parse_args()
+    skill = ChangeAge(config={'device': args.device})
+    result = skill.execute(
+        image_path=args.input, output_path=args.output,
+        age=args.age,
+        strength=args.strength, steps=args.steps, seed=args.seed
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -1,0 +1,18 @@
+{
+  "name": "ExifInjector",
+  "version": "1.0.0",
+  "description": "为图片添加相机 EXIF 元数据，让 AI 图片更像真实照片",
+  "tags": ["exif", "metadata", "camera", "photo"],
+  "dependencies": ["Pillow"],
+  "inputs": [
+    {"name": "image_path", "type": "string", "description": "输入图片路径", "required": true},
+    {"name": "camera", "type": "string", "description": "相机预设", "required": false, "default": "sony_a7iv"},
+    {"name": "style", "type": "string", "description": "照片风格", "required": false, "default": "portrait"}
+  ],
+  "outputs": [
+    {"name": "output_path", "description": "输出图片路径"},
+    {"name": "exif_params", "description": "注入的 EXIF 参数"}
+  ],
+  "config": {},
+  "class_name": "ExifInjector"
+}

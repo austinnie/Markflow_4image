@@ -1,0 +1,60 @@
+{
+  "name": "ChangeClothes",
+  "version": "1.0.0",
+  "description": "将人物衣服替换为指定款式",
+  "tags": ["clothes", "fashion", "inpaint", "controlnet"],
+  "dependencies": [
+    "torch",
+    "diffusers",
+    "transformers",
+    "accelerate",
+    "Pillow",
+    "opencv-python",
+    "ultralytics"
+  ],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "prompt",
+      "type": "string",
+      "description": "服装描述，如: wearing a red dress, elegant",
+      "required": false,
+      "default": "wearing a beautiful dress, elegant, fashionable, high quality, detailed, masterpiece"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "重绘强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.6
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "description": "ControlNet 类型",
+      "required": false,
+      "default": "openpose"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成图片路径"
+    },
+    {
+      "name": "parameters",
+      "description": "使用的参数"
+    }
+  ],
+  "config": {
+    "default_model": "zenityXmix.inpainting.safetensors",
+    "default_steps": 25,
+    "default_strength": 0.6
+  },
+  "class_name": "ChangeClothes"
+}

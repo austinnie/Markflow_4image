@@ -1,0 +1,23 @@
+{
+  "name": "PhotoRealistic",
+  "version": "1.0.0",
+  "description": "让 AI 图片看起来像真实相机照片，所有功能默认关闭",
+  "tags": ["photo", "realistic", "camera", "enhance"],
+  "dependencies": ["Pillow", "opencv-python"],
+  "inputs": [
+    {"name": "image_path", "type": "string", "description": "输入图片路径", "required": true},
+    {"name": "enable_noise", "type": "boolean", "description": "添加噪点", "required": false, "default": false},
+    {"name": "enable_vignette", "type": "boolean", "description": "添加暗角", "required": false, "default": false},
+    {"name": "enable_sharpen", "type": "boolean", "description": "锐化", "required": false, "default": false},
+    {"name": "enable_exif", "type": "boolean", "description": "注入 EXIF", "required": false, "default": false},
+    {"name": "camera", "type": "string", "description": "相机预设", "required": false, "default": "sony_a7iv"},
+    {"name": "style", "type": "string", "description": "照片风格", "required": false, "default": "portrait"},
+    {"name": "strength", "type": "string", "description": "强度", "required": false, "default": "medium"}
+  ],
+  "outputs": [
+    {"name": "output_path", "description": "输出图片路径"},
+    {"name": "applied", "description": "已应用的功能列表"}
+  ],
+  "config": {},
+  "class_name": "PhotoRealistic"
+}

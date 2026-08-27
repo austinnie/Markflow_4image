@@ -1,0 +1,85 @@
+{
+  "name": "photo_restorer",
+  "description": "老照片修复工具 - 使用AI技术修复、上色、增强老照片",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "action",
+      "type": "string",
+      "required": false,
+      "description": "操作类型 (restore/colorize/enhance/list_models/status)",
+      "default": "restore"
+    },
+    {
+      "name": "image_path",
+      "type": "string",
+      "required": false,
+      "description": "待修复的图片路径"
+    },
+    {
+      "name": "model",
+      "type": "string",
+      "required": false,
+      "description": "修复模型 (real_esrgan/gfpgan/ssdiff/dcal_gan)",
+      "default": "real_esrgan"
+    },
+    {
+      "name": "output_dir",
+      "type": "string",
+      "required": false,
+      "description": "输出目录",
+      "default": "./skills/photo_restorer/output"
+    },
+    {
+      "name": "scale",
+      "type": "integer",
+      "required": false,
+      "description": "放大倍数 (2或4)",
+      "default": 2
+    },
+    {
+      "name": "denoise",
+      "type": "boolean",
+      "required": false,
+      "description": "是否去噪",
+      "default": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "status",
+      "description": "执行状态 (success/error)"
+    },
+    {
+      "name": "action",
+      "description": "执行的操作"
+    },
+    {
+      "name": "output_path",
+      "description": "修复后的图片路径"
+    },
+    {
+      "name": "model_used",
+      "description": "使用的AI模型"
+    },
+    {
+      "name": "processing_time",
+      "description": "处理耗时（秒）"
+    }
+  ],
+  "dependencies": [
+    "opencv-python",
+    "torch",
+    "basicsr",
+    "gfpgan",
+    "realesrgan"
+  ],
+  "tags": [
+    "老照片",
+    "修复",
+    "AI",
+    "图像增强",
+    "上色"
+  ],
+  "difficulty": "⭐⭐⭐⭐"
+}

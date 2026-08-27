@@ -1,0 +1,79 @@
+{
+  "name": "ChangeBackground",
+  "version": "1.0.0",
+  "description": "保持人物不变，替换图片背景，支持预设背景和自定义描述",
+  "tags": ["background", "replace", "inpaint", "depth", "controlnet"],
+  "dependencies": [
+    "torch",
+    "diffusers",
+    "transformers",
+    "accelerate",
+    "Pillow",
+    "opencv-python",
+    "ultralytics"
+  ],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "preset",
+      "type": "string",
+      "description": "预设背景名称: beach, forest, mountain, city, space, underwater, sakura, autumn, snow, desert, library, cafe, temple, sunset, aurora, waterfall, castle, cyberpunk, studio, gradient",
+      "required": false
+    },
+    {
+      "name": "background_prompt",
+      "type": "string",
+      "description": "自定义背景描述提示词",
+      "required": false
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "重绘强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.7
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "description": "ControlNet 类型 (depth/canny/hed/lineart)",
+      "required": false,
+      "default": "depth"
+    },
+    {
+      "name": "save_mask",
+      "type": "boolean",
+      "description": "是否保存遮罩",
+      "required": false,
+      "default": false
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成图片路径"
+    },
+    {
+      "name": "parameters",
+      "description": "使用的参数"
+    }
+  ],
+  "config": {
+    "default_model": "zenityXmix.inpainting.safetensors",
+    "default_steps": 30,
+    "default_strength": 0.7
+  },
+  "class_name": "ChangeBackground"
+}

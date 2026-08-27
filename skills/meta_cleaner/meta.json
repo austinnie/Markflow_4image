@@ -1,0 +1,17 @@
+{
+  "name": "MetaCleaner",
+  "version": "1.0.0",
+  "description": "清除图片中的 AI 生成痕迹，移除元数据",
+  "tags": ["metadata", "clean", "exif", "ai"],
+  "dependencies": ["Pillow"],
+  "inputs": [
+    {"name": "image_path", "type": "string", "description": "输入图片路径", "required": true},
+    {"name": "method", "type": "string", "description": "清理方法", "required": false, "default": "auto"}
+  ],
+  "outputs": [
+    {"name": "output_path", "description": "输出图片路径"},
+    {"name": "method", "description": "使用的方法"}
+  ],
+  "config": {},
+  "class_name": "MetaCleaner"
+}
