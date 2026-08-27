@@ -25,8 +25,6 @@ skills/*/output/*
 *.bin
 
 # ?片?出（如果不想提交?片）
-*.jpg
-*.png
 *.mp3
 *.txt
 
