@@ -1,0 +1,68 @@
+{
+  "output_dir": "./skills/sd_image_generator/output/images",
+  "model": "anytimeRealistic_v10.safetensors",
+  "default_params": {
+    "width": 512,
+    "height": 768,
+    "steps": 30,
+    "cfg_scale": 7.5,
+    "seed": -1,
+    "batch_size": 1
+  },
+  "schemes": [
+    {
+      "name": "私处特写（艺术）",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, artistic nude photography, close-up of a woman's intimate area, lower body, soft natural lighting, delicate skin texture, fine art composition, elegant pose, tasteful nudity, feminine beauty, high quality, detailed, soft focus background",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, explicit, pornographic, vulgar, extreme closeup, gore, blood, injury, medical, surgery, disease, infection, shaved, completely bald",
+      "id": 1
+    },
+    {
+      "name": "私处特写（自然）",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, beautiful woman's private parts, natural pubic hair, intimate photography, soft warm lighting, artistic nude, feminine area, natural beauty, peaceful atmosphere, high quality, detailed, tasteful, elegant composition",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, explicit, pornographic, vulgar, extreme closeup, shaved, completely bald, gore, blood, injury, medical, surgery, disease, infection",
+      "id": 2
+    },
+    {
+      "name": "私处特写（唯美）",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, artistic intimate photography, woman's lower body, soft focus, beautiful lighting, feminine curves, tasteful nude, delicate skin, intimate atmosphere, high quality, detailed, fine art, elegant",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, explicit, pornographic, vulgar, extreme closeup, gore, blood, injury, medical, surgery, disease, infection, shaved",
+      "id": 3
+    },
+    {
+      "name": "私处特写（花丛）",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, beautiful woman's intimate area surrounded by flowers, artistic composition, soft natural lighting, flower petals, feminine beauty, tasteful nude, fine art photography, high quality, detailed, dreamy atmosphere, romantic",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, explicit, pornographic, vulgar, extreme closeup, gore, blood, injury, medical, surgery, disease, infection",
+      "id": 4
+    },
+    {
+      "name": "私处特写（森林）",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, artistic nude in nature, woman's intimate area, forest background, dappled sunlight, natural beauty, feminine area, tasteful, high quality, detailed, serene atmosphere, connection with nature",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, explicit, pornographic, vulgar, extreme closeup, gore, blood, injury, medical, surgery, disease, infection",
+      "id": 5
+    },
+    {
+      "name": "私处特写（浴光）",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, intimate photography of woman's lower body, soft window light, warm golden tones, artistic nude, delicate skin, feminine beauty, elegant pose, high quality, detailed, tasteful, peaceful atmosphere",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, explicit, pornographic, vulgar, extreme closeup, gore, blood, injury, medical, surgery, disease, infection",
+      "id": 6
+    },
+    {
+      "id": 7,
+      "name": "极致精简版（推荐）",
+      "prompt": "masterpiece, best quality, 8k, photorealistic, 1girl, pure and sexy, innocent yet seductive, flawless skin, soft natural makeup, sheer white lace lingerie, disheveled hair, soft morning light, cozy bedroom, intimate atmosphere, detailed face, perfect body",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, heavy makeup, artificial, plastic, overdone, fat, obese, overweight, pale, sick, unhealthy, mutated, disfigured"
+    },
+    {
+      "id": 8,
+      "name": "详细版（保留更多细节）",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, 1girl, pure and sexy, innocent face with seductive gaze, flawless porcelain skin, soft natural makeup, slightly parted lips, disheveled hair, sheer white lace lingerie, soft morning light streaming through window, cozy bedroom with white sheets, intimate atmosphere, natural beauty, alluring yet innocent, detailed face, perfect body",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, heavy makeup, artificial, plastic, overdone, fat, obese, overweight, pale, sick, unhealthy, mutated, disfigured, bad proportions, cropped, out of frame"
+    },
+    {
+      "id": 9,
+      "name": "强调光影和氛围",
+      "prompt": "masterpiece, best quality, photorealistic, 8k, 1girl, pure and sexy, innocent with seductive eyes, flawless skin, natural makeup, sheer white lace lingerie, messy bed hair, warm golden morning light, soft shadows, bedroom atmosphere, intimate mood, detailed face, perfect anatomy,big boobs, full bust",
+      "negative_prompt": "worst quality, low quality, ugly, deformed, blurry, bad anatomy, bad hands, missing fingers, extra digits, watermark, text, signature, heavy makeup, artificial, plastic, overdone, fat, obese, pale, sick, mutated, disfigured, cropped, out of frame, bad composition"
+    }
+  ]
+}
