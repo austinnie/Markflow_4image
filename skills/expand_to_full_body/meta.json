@@ -1,0 +1,43 @@
+{
+  "name": "expand_to_full_body",
+  "version": "1.0.0",
+  "description": "将人物半身/头像图扩展为全身图",
+  "author": "MarkFlow Team",
+  "tags": ["outpainting", "full-body", "人物扩展", "全身图"],
+  "dependencies": [
+    "torch",
+    "Pillow",
+    "diffusers",
+    "ultralytics",
+    "controlnet-aux"
+  ],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "prompt",
+      "type": "string",
+      "description": "人物描述提示词",
+      "required": false,
+      "default": "a person, beautiful, detailed"
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "description": "ControlNet 类型",
+      "required": false,
+      "default": "openpose"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "type": "string",
+      "description": "生成的全身图路径"
+    }
+  ]
+}
