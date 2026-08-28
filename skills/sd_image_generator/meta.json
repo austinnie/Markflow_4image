@@ -1,82 +1,85 @@
 {
-  "name": "SDImageGenerator",
+  "name": "sd_image_generator",
+  "display_name": "sd_image_generator",
+  "description": "利用本地 Stable Diffusion 模型，根据文本描述生成高质量图片",
   "version": "1.0.0",
-  "description": "使用本地 Stable Diffusion 模型生成图片的技能",
-  "tags": [],
-  "dependencies": [
-    "diffusers",
-    "torch",
-    "transformers",
-    "accelerate",
-    "safetensors",
-    "Pillow"
-  ],
   "inputs": [
     {
       "name": "prompt",
       "type": "string",
-      "description": "图片描述提示词 (必填)",
-      "required": true
+      "description": "图片描述提示词",
+      "required": true,
+      "default": ""
     },
     {
       "name": "negative_prompt",
       "type": "string",
-      "description": "负面提示词，描述不想出现的内容 (可选)",
-      "required": false
+      "description": "负面提示词",
+      "required": false,
+      "default": ""
     },
     {
       "name": "model_name",
       "type": "string",
-      "description": "使用的模型文件名，默认 sd-v1-5-tiny.safetensors",
-      "required": false
+      "description": "使用的模型文件名",
+      "required": false,
+      "default": "sd-v1-5-tiny.safetensors"
     },
     {
       "name": "width",
       "type": "integer",
-      "description": "生成图片宽度，默认 512，范围 256-1024",
-      "required": false
+      "description": "生成图片宽度，范围 256-1024",
+      "required": false,
+      "default": "512"
     },
     {
       "name": "height",
       "type": "integer",
-      "description": "生成图片高度，默认 512，范围 256-1024",
-      "required": false
+      "description": "生成图片高度，范围 256-1024",
+      "required": false,
+      "default": "512"
     },
     {
       "name": "steps",
       "type": "integer",
-      "description": "采样步数，默认 20，范围 10-50",
-      "required": false
+      "description": "采样步数，范围 10-50",
+      "required": false,
+      "default": "20"
     },
     {
       "name": "cfg_scale",
       "type": "float",
-      "description": "提示词引导强度，默认 7.0，范围 1.0-20.0",
-      "required": false
+      "description": "提示词引导强度，范围 1.0-20.0",
+      "required": false,
+      "default": "7.0"
     },
     {
       "name": "seed",
       "type": "integer",
-      "description": "随机种子，-1表示随机，默认 -1",
-      "required": false
+      "description": "随机种子，-1 表示随机",
+      "required": false,
+      "default": "-1"
     },
     {
       "name": "output_dir",
       "type": "string",
-      "description": "输出目录，默认 ./generated_images",
-      "required": false
+      "description": "输出目录",
+      "required": false,
+      "default": "./generated_images"
     },
     {
       "name": "batch_size",
       "type": "integer",
-      "description": "一次生成数量，默认 1，范围 1-4",
-      "required": false
+      "description": "一次生成数量，范围 1-4",
+      "required": false,
+      "default": "1"
     },
     {
       "name": "scheduler",
       "type": "string",
-      "description": "采样调度器，可选 ddim, pndm, lms, euler, euler_a, dpm",
-      "required": false
+      "description": "采样调度器",
+      "required": false,
+      "default": "ddim"
     }
   ],
   "outputs": [
@@ -94,13 +97,39 @@
     },
     {
       "name": "generation_time",
-      "description": "生成耗时"
+      "description": "生成耗时(秒)"
     },
     {
       "name": "generated_at",
       "description": "生成时间"
     }
   ],
-  "config": {},
-  "class_name": "Sdimagegenerator"
+  "dependencies": [
+    "diffusers",
+    "torch",
+    "transformers",
+    "accelerate",
+    "safetensors",
+    "Pillow"
+  ],
+  "tags": [],
+  "features": [
+    "文本生图 - 根据提示词生成高质量图片",
+    "参数控制 - 支持宽度、高度、步数、引导强度等参数",
+    "批量生成 - 支持一次生成多张图片",
+    "模型切换 - 支持切换不同的 SD 模型",
+    "随机种子 - 支持固定种子或随机种子"
+  ],
+  "generated_at": "2026-08-28T18:51:14.371989",
+  "quality": {
+    "score": 85,
+    "passed": true,
+    "checks_count": 4,
+    "errors_count": 0
+  },
+  "trace": {
+    "coverage": 0.75,
+    "total_requirements": 12,
+    "implemented": 9
+  }
 }
