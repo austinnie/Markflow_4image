@@ -148,17 +148,24 @@ class SkillRegistry:
         return loaded
     
     def save_to_file(self, name: str, code: str, metadata: Dict = None) -> Path:
-        """保存技能到文件"""
-        code_file = self.storage_dir / f"{name}.py"
-        with open(code_file, 'w', encoding='utf-8') as f:
+        """保存技能到文件（新格式：技能目录）"""
+        # 转换为小写作为目录名
+        skill_name = name.lower()
+        skill_dir = self.storage_dir / skill_name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 保存 skill.py
+        skill_file = skill_dir / "skill.py"
+        with open(skill_file, 'w', encoding='utf-8') as f:
             f.write(code)
         
+        # 保存 meta.json
         if metadata:
-            meta_file = self.storage_dir / f"{name}.meta.json"
+            meta_file = skill_dir / "meta.json"
             with open(meta_file, 'w', encoding='utf-8') as f:
-                json.dump(metadata, f, indent=2, ensure_ascii=False)
+                json.dump(metadata, f, ensure_ascii=False, indent=2)
         
-        return code_file
+        return skill_file
     
     def clear(self):
         """清空注册表"""
