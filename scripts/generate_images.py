@@ -19,6 +19,21 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from markflow.cli.commands import execute_skill
+from markflow.utils.model_config import get_model_config
+
+
+def get_sd_config():
+    """获取 SD 配置"""
+    cfg = get_model_config()
+    return {
+        "model_path": cfg.get("model_path"),
+        "model_name": cfg.get("model_name"),
+        "device": cfg.get("device", "cpu"),
+        "steps": cfg.get("default_steps", 25),
+        "cfg_scale": cfg.get("default_cfg", 7.5),
+        "loras": cfg.get("loras", []),
+        "model_type": cfg.get("model_type", "sd15"),
+    }
 
 
 class PromptLoader:
@@ -140,7 +155,7 @@ class PromptLoader:
                     'cfg_scale': scheme.get('cfg_scale', default_params.get('cfg_scale', 7.5)),
                     'seed': scheme.get('seed', default_params.get('seed', -1)),
                     'batch_size': scheme.get('batch_size', default_params.get('batch_size', 1)),
-                    'model': scheme.get('model', default_params.get('model', 'anytimeRealistic_v10.safetensors'))
+                    'model': scheme.get('model', default_params.get('model', None))
                 },
                 'source': 'json'
             })
@@ -253,7 +268,7 @@ class PromptLoader:
                                 'cfg_scale': 7.5,
                                 'seed': -1,
                                 'batch_size': 1,
-                                'model': 'anytimeRealistic_v10.safetensors'
+                                'model': None  # 使用统一配置
                             },
                             'source': 'python',
                             'style_name': style_name,
@@ -288,7 +303,7 @@ class PromptLoader:
                         'cfg_scale': 7.5,
                         'seed': -1,
                         'batch_size': 1,
-                        'model': 'anytimeRealistic_v10.safetensors'
+                        'model': None  # 使用统一配置
                     },
                     'source': 'python',
                     'style_name': style_name,
@@ -334,6 +349,13 @@ class SDImageGenerator:
         self.folder_filter = folder_filter
         self.limit = limit
         self._call_count = 0
+        
+        # ✅ 加载统一配置
+        self.sd_config = get_sd_config()
+        print(f"📁 使用模型: {self.sd_config.get('model_name', '未设置')}")
+        print(f"💻 设备: {self.sd_config.get('device', 'cpu')}")
+        print(f"📦 LoRA: {len(self.sd_config.get('loras', []))} 个")
+        print()
         
         if config_path:
             self._load_from_json(config_path)
@@ -516,6 +538,39 @@ class SDImageGenerator:
         
         print(f"\n💾 风格列表已保存到: {output_file}")
     
+    # ==================== ✅ 新增：获取配置的方法 ====================
+    
+    def _get_model_name(self, scheme_model: Optional[str] = None) -> str:
+        """
+        获取模型名称
+        优先级: scheme 中指定 > 统一配置 > 回退值
+        """
+        # 如果 scheme 指定了模型，使用它
+        if scheme_model:
+            return scheme_model
+        
+        # 否则使用统一配置的模型
+        model_name = self.sd_config.get('model_name')
+        if model_name:
+            return model_name
+        
+        # 回退
+        return 'sd-v1-5-tiny.safetensors'
+    
+    def _get_steps(self, scheme_steps: Optional[int] = None) -> int:
+        """获取步数"""
+        if scheme_steps:
+            return scheme_steps
+        return self.sd_config.get('default_steps', 25)
+    
+    def _get_cfg_scale(self, scheme_cfg: Optional[float] = None) -> float:
+        """获取 CFG Scale"""
+        if scheme_cfg:
+            return scheme_cfg
+        return self.sd_config.get('default_cfg', 7.5)
+    
+    # ==================== 生成方法 ====================
+    
     def generate_one(self, scheme, index: int = None, total: int = None):
         """生成单张图片"""
         self._call_count += 1
@@ -549,22 +604,59 @@ class SDImageGenerator:
             except:
                 seed = -1
         
+        # ✅ 从统一配置获取参数
+        model_name = self._get_model_name(params.get('model'))
+        steps = self._get_steps(params.get('steps'))
+        cfg_scale = self._get_cfg_scale(params.get('cfg_scale'))
+        
+        print(f"📦 使用模型: {model_name}")
+        print(f"⚙️  步数: {steps}, CFG: {cfg_scale}")
+        print(f"📝 提示词: {prompt[:80]}...")
+        
         try:
             result = execute_skill(
                 "sd_image_generator",
                 prompt=prompt,
                 negative_prompt=negative_prompt,
-                model_name=params.get('model', 'anytimeRealistic_v10.safetensors'),
+                model_name=model_name,
                 width=params.get('width', 512),
                 height=params.get('height', 768),
-                steps=params.get('steps', 30),
-                cfg_scale=params.get('cfg_scale', 7.5),
+                steps=steps,
+                cfg_scale=cfg_scale,
                 seed=seed,
                 batch_size=params.get('batch_size', 1)
             )
-            return result is not None
+            
+            # ✅ 检查返回值
+            if result is None:
+                print("❌ 执行失败: 返回值为 None")
+                return False
+            
+            # ✅ 如果 result 是字典，检查 status
+            if isinstance(result, dict):
+                if result.get('status') == 'success':
+                    print(f"✅ 生成成功!")
+                    image_paths = result.get('image_paths', [])
+                    if image_paths:
+                        for path in image_paths:
+                            print(f"   📁 {path}")
+                    return True
+                else:
+                    error = result.get('error', '未知错误')
+                    print(f"❌ 执行失败: {error}")
+                    return False
+            
+            # ✅ 如果 result 是布尔值
+            if isinstance(result, bool):
+                return result
+            
+            print(f"⚠️ 未知返回值类型: {type(result)}")
+            return False
+            
         except Exception as e:
             print(f"❌ 执行失败: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def list_schemes(self):
@@ -593,6 +685,7 @@ class SDImageGenerator:
         print(f"共 {len(self.schemes)} 个方案")
         print(f"源目录: {self.source_path}")
         print(f"输出目录: {self.output_dir}")
+        print(f"📦 当前模型: {self.sd_config.get('model_name', '未设置')}")
     
     def generate_by_id(self, ids):
         """根据 ID 生成（ID 从 1 开始）"""
@@ -644,7 +737,7 @@ class SDImageGenerator:
             time.sleep(0.5)
         print(f"\n✅ 完成！成功 {success}/{total} 张")
     
-    # ========== 新增：衣服移除模式 ==========
+    # ========== 衣服移除模式 ==========
     def remove_clothes_mode(self, args):
         """执行衣服移除"""
         print("\n" + "="*60)
@@ -751,11 +844,18 @@ class SDImageGenerator:
         else:
             prompts_path = "configs/prompts/"
         
+        # 获取当前模型信息
+        sd_config = get_sd_config()
+        current_model = sd_config.get('model_name', '未设置')
+        
         print(f"""
 ╔══════════════════════════════════════════════════════════════════╗
 ║                    SD 图片批量生成器                             ║
 ║                    支持 JSON + Python 配置                      ║
 ╚══════════════════════════════════════════════════════════════════╝
+
+📦 当前模型: {current_model}
+💻 设备: {sd_config.get('device', 'cpu')}
 
 📖 图片生成用法:
 
@@ -864,7 +964,7 @@ class SDImageGenerator:
             success = 0
             for idx, s in enumerate(self.schemes[:total], 1):
                 print(f"\n进度: {idx}/{total}")
-                if self.generate_one(s, idx, total):  # ← 传入 total
+                if self.generate_one(s, idx, total):
                     success += 1
                 time.sleep(0.5)
             print(f"\n✅ 完成！成功 {success}/{total} 张")
@@ -878,7 +978,7 @@ class SDImageGenerator:
                 success = 0
                 for idx, s in enumerate(self.schemes[:total], 1):
                     print(f"\n进度: {idx}/{total}")
-                    if self.generate_one(s, idx, total):  # ← 传入 total
+                    if self.generate_one(s, idx, total):
                         success += 1
                     time.sleep(0.5)
                 print(f"\n✅ 完成！成功 {success}/{total} 张")
