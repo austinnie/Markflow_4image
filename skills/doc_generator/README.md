@@ -51,22 +51,57 @@ pip install markdown
 
 ## 使用方法
 
+### 方式一：直接使用 skill.py（推荐用于调试）
 ```bash
-python -m markflow.cli.commands execute doc_generator [参数]
-```
 
-### 示例
-
-```bash
 # 生成 README
-python -m markflow.cli.commands execute doc_generator code_path="./skills/sd_image_generator/skill.py" doc_type="readme" project_name="sd_image_generator"
+python skills/doc_generator/skill.py --code_path="skills/code_reviewer/" --doc_type="readme" --project_name="sd_image_generator"
+
+# 生成所有文档（API + README + 示例）
+python skills/doc_generator/skill.py --code_path="skills/code_reviewer" --doc_type="all"
+
+# 生成 API 参考文档（HTML格式）
+python skills/doc_generator/skill.py --code_path="skills/code_reviewer" --doc_type="api" --output_format="html"
+
+# 添加作者和描述
+python skills/doc_generator/skill.py --code_path="skills/code_reviewer" --author="你的名字" --project_description="SD图像生成器"
+
+# 查看详细日志
+python skills/doc_generator/skill.py --code_path="skills/code_reviewer" --verbose
+
+# 查看帮助
+python skills/doc_generator/skill.py --help
 ```
 
-查看完整参数说明：
+### 方式二：通过 markflow 调用
 
 ```bash
+
+# 查看完整参数说明：
+
 python -m markflow.cli.commands info doc_generator
+
+# 生成 README
+python -m markflow.cli.commands execute doc_generator code_path="./skills/code_reviewer/skill.py" doc_type="readme" project_name="code_reviewer"
+
+# 生成所有文档
+python -m markflow.cli.commands execute doc_generator code_path="./skills/code_reviewer" doc_type="all"
+
+# 生成 API 参考文档（HTML格式）
+python -m markflow.cli.commands execute doc_generator code_path="./my_project" doc_type="api" output_format="html"
 ```
+
+### 方式三：使用 generate_readme_for_skill.py 脚本（推荐用于日常使用）
+使用封装好的脚本，只需指定技能名称，自动读取 meta.json：
+查看完整参数说明：
+```bash
+# 为单个技能生成 README
+python scripts/generate_readme_for_skill.py code_reviewer
+
+# 为所有技能批量生成 README
+python scripts/generate_readme_for_skill.py --all
+```
+
 
 ## 输出位置
 

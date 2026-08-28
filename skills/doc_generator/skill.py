@@ -108,13 +108,16 @@ class DocGenerator:
             'imports': [],
             'classes': [],
             'functions': [],
-            'constants': []
+            'constants': [],
+            'content': ''  # ✅ 新增这行
         }
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-
+            
+            result['content'] = content  # ✅ 新增这行，保存内容
+            
             tree = ast.parse(content)
 
             module_doc = ast.get_docstring(tree)
@@ -354,7 +357,360 @@ class DocGenerator:
 
         return '\n'.join(lines)
 
+    def _extract_skill_features(self, parsed_files: List[Dict], project_name: str) -> Dict[str, Any]:
+        """自动从代码中提取技能特征"""
+        features = {
+            'capabilities': [],
+            'supported_langs': {},
+            'data_sources': [],
+            'categories': [],
+            'features_table': [],
+            'dependencies': [],
+            'special_notes': []
+        }
+        
+        # 收集所有代码内容（直接从文件读取）
+        all_content = ""
+        for f in parsed_files:
+            file_path_str = f.get('file_path', '')
+            if file_path_str:
+                try:
+                    with open(file_path_str, 'r', encoding='utf-8') as f_read:
+                        content = f_read.read()
+                        all_content += content + "\n"
+                except Exception as e:
+                    logger.warning(f"读取文件失败 {file_path_str}: {e}")
+        
+        if not all_content:
+            # 降级：从 docstring 获取
+            for f in parsed_files:
+                docstring = f.get('docstring', '')
+                if docstring:
+                    all_content += docstring + "\n"
+        
+        # 1. 检测并提取功能列表（从 docstring 或注释中）
+        for file_info in parsed_files:
+            # 从模块 docstring 提取
+            docstring = file_info.get('docstring', '')
+            if docstring:
+                lines = docstring.split('\n')
+                for line in lines:
+                    if any(kw in line.lower() for kw in ['功能', '特性', '支持', 'feature', 'capability']):
+                        if line.strip() and not line.strip().startswith(('"""', "'''")):
+                            features['capabilities'].append(line.strip())
+            
+            # 从类和方法中提取功能
+            for cls in file_info.get('classes', []):
+                cls_doc = cls.get('docstring', '')
+                if cls_doc:
+                    for line in cls_doc.split('\n'):
+                        if '功能' in line or 'feature' in line.lower():
+                            if line.strip() and not line.strip().startswith(('"""', "'''")):
+                                features['capabilities'].append(line.strip())
+                
+                for method in cls.get('methods', []):
+                    method_name = method.get('name', '')
+                    if method_name.startswith(('play', 'search', 'download', 'generate', 'export', 'import', 
+                                              'scan', 'analyze', 'translate', 'speak', 'quiz', 'flashcard')):
+                        action = {
+                            'play': '▶️ 播放/播放控制',
+                            'search': '🔍 搜索功能',
+                            'download': '📥 下载功能',
+                            'generate': '✨ 生成功能',
+                            'export': '💾 导出功能',
+                            'import': '📂 导入功能',
+                            'scan': '📁 扫描功能',
+                            'analyze': '📊 分析功能',
+                            'translate': '🌐 翻译功能',
+                            'speak': '🔊 语音合成',
+                            'quiz': '❓ 测验功能',
+                            'flashcard': '🃏 闪卡学习',
+                        }.get(method_name.split('_')[0], '')
+                        if action and action not in features['capabilities']:
+                            features['capabilities'].append(action)
+        
+        # 2. 提取支持的语言（从常量、配置或注释中）
+        lang_patterns = [
+            r'SUPPORTED_LANGUAGES\s*=\s*\{([^}]+)\}',
+            r'LANGUAGES\s*=\s*\[([^\]]+)\]',
+            r'SUPPORTED_LANG\w*\s*=\s*\[([^\]]+)\]',
+            r'#\s*支持的语言[:：]\s*([^\n]+)',
+            r'语言支持[:：]\s*([^\n]+)',
+        ]
+        
+        for pattern in lang_patterns:
+            match = re.search(pattern, all_content, re.IGNORECASE | re.DOTALL)
+            if match:
+                lang_str = match.group(1)
+                lang_names = re.findall(r'["\'](\w+)["\']', lang_str)
+                if lang_names:
+                    lang_map = {
+                        'en': '英语', 'es': '西班牙语', 'fr': '法语', 'de': '德语',
+                        'it': '意大利语', 'pt': '葡萄牙语', 'nl': '荷兰语', 'pl': '波兰语',
+                        'fi': '芬兰语', 'el': '希腊语', 'ar': '阿拉伯语', 'he': '希伯来语',
+                        'th': '泰语', 'sv': '瑞典语', 'ja': '日语', 'zh': '中文',
+                        'ko': '韩语', 'ru': '俄语', 'hi': '印地语', 'vi': '越南语',
+                        'python': 'Python', 'javascript': 'JavaScript', 'java': 'Java',
+                        'cpp': 'C++', 'go': 'Go', 'rust': 'Rust'
+                    }
+                    for code in lang_names:
+                        if code in lang_map:
+                            features['supported_langs'][code] = lang_map[code]
+                        else:
+                            features['supported_langs'][code] = code
+                    break
+        
+        # 3. 提取分类信息（从常量或注释中）
+        category_patterns = [
+            r'CATEGORIES\s*=\s*\{([^}]+)\}',
+            r'#\s*分类[:：]\s*([^\n]+)',
+            r'CATEGORY\w*\s*=\s*\[([^\]]+)\]',
+        ]
+        
+        for pattern in category_patterns:
+            match = re.search(pattern, all_content, re.IGNORECASE | re.DOTALL)
+            if match:
+                cat_str = match.group(1)
+                categories = re.findall(r'["\'](\w+)["\']', cat_str)
+                if categories:
+                    features['categories'] = categories
+                    break
+        
+        # 4. 检测特殊功能（从注释和字符串中）
+        special_keywords = {
+            'ai': '🤖 AI 智能处理',
+            'ollama': '🤖 AI 摘要/生成',
+            'rss': '📡 RSS 订阅',
+            'playlist': '🎵 播放列表管理',
+            'lyric': '📋 歌词显示',
+            'progress': '📊 进度追踪',
+            'review': '🔄 复习模式',
+            'grammar': '📖 语法学习',
+            'tts': '🔊 语音合成',
+            'wordnet': '📚 WordNet 词典',
+            'jamdict': '📚 Jamdict 日语词典',
+            'jieba': '📚 Jieba 中文分词',
+            'cedict': '📚 CEDICT 词典',
+        }
+        
+        for keyword, label in special_keywords.items():
+            if keyword in all_content.lower():
+                if label not in features['capabilities']:
+                    features['capabilities'].append(label)
+        
+        # 5. 提取数据源信息
+        source_patterns = [
+            r'数据源[:：]\s*([^\n]+)',
+            r'source[s]?\s*=\s*["\']([^"\']+)["\']',
+            r'from\s+["\']([^"\']+)["\']\s+import',
+        ]
+        
+        for pattern in source_patterns:
+            matches = re.findall(pattern, all_content, re.IGNORECASE)
+            if matches:
+                for m in matches:
+                    if m and m not in features['data_sources'] and len(m) > 3:
+                        features['data_sources'].append(m)
+        
+        # 6. 检测特殊功能模块
+        if any(kw in all_content.lower() for kw in ['flashcard', 'quiz', 'learn']):
+            features['features_table'].append(('🃏 闪卡学习模式', '高效的单词记忆方式'))
+            features['features_table'].append(('❓ 选择题测验', '检验学习成果'))
+        
+        if any(kw in all_content.lower() for kw in ['grammar', 'sentence']):
+            features['features_table'].append(('📖 语法学习', '掌握语言规则'))
+        
+        if any(kw in all_content.lower() for kw in ['progress', 'track', 'stats']):
+            features['features_table'].append(('📊 学习进度追踪', '记录学习统计'))
+        
+        if any(kw in all_content.lower() for kw in ['play', 'music', 'audio']):
+            features['features_table'].append(('▶️ 播放音乐', '自动选择播放器'))
+            features['features_table'].append(('🔊 音量控制', '调节播放音量'))
+            features['features_table'].append(('📊 播放控制', '暂停/继续/停止'))
+        
+        # 7. 提取依赖（从 imports 或注释）
+        for file_info in parsed_files:
+            imports = file_info.get('imports', [])
+            for imp in imports:
+                if any(dep in imp for dep in ['nltk', 'jamdict', 'jieba', 'konlpy', 'edge_tts']):
+                    features['dependencies'].append(imp.split('.')[0] if '.' in imp else imp)
+        
+        return features
+    
     def _generate_readme_md(self, parsed_files: List[Dict], project_name: str,
+                           project_description: str, author: str) -> str:
+        """生成 README 文档 - 智能版"""
+        lines = []
+        
+        # 标题和描述
+        lines.append(f"# {project_name}")
+        lines.append("")
+        if project_description:
+            lines.append(f"> {project_description}")
+            lines.append("")
+        
+        if author:
+            lines.append(f"**作者**: {author}")
+            lines.append("")
+        
+        # 概览
+        total_classes = 0
+        total_methods = 0
+        total_functions = 0
+        
+        for f in parsed_files:
+            total_classes += len(f['classes'])
+            total_functions += len(f['functions'])
+            for cls in f['classes']:
+                total_methods += len(cls['methods'])
+        
+        lines.append("## 概览")
+        lines.append("")
+        lines.append(f"- **文件数**: {len(parsed_files)}")
+        lines.append(f"- **类数**: {total_classes}")
+        lines.append(f"- **方法数**: {total_methods}")
+        lines.append(f"- **函数数**: {total_functions}")
+        lines.append("")
+        
+        # ============ 智能提取特征 ============
+        features = self._extract_skill_features(parsed_files, project_name)
+        
+        # 支持的语言
+        if features.get('supported_langs'):
+            lines.append("## 支持的语言")
+            lines.append("")
+            lines.append("| 语言 | 代码 |")
+            lines.append("|------|------|")
+            for code, name in features['supported_langs'].items():
+                lines.append(f"| {name} | `{code}` |")
+            lines.append("")
+        
+        # 功能列表
+        if features.get('capabilities') or features.get('features_table'):
+            lines.append("## 支持的功能")
+            lines.append("")
+            lines.append("| 功能 | 说明 |")
+            lines.append("|------|------|")
+            
+            # 去重
+            all_features = set()
+            for cap in features.get('capabilities', []):
+                if cap and cap not in all_features:
+                    all_features.add(cap)
+                    # 尝试提取简短说明
+                    parts = cap.split('：', 1) if '：' in cap else cap.split(':', 1)
+                    if len(parts) == 2:
+                        lines.append(f"| {parts[0].strip()} | {parts[1].strip()} |")
+                    else:
+                        lines.append(f"| {cap} | - |")
+            
+            for name, desc in features.get('features_table', []):
+                if name not in all_features:
+                    lines.append(f"| {name} | {desc} |")
+                    all_features.add(name)
+            lines.append("")
+        
+        # 数据源
+        if features.get('data_sources'):
+            lines.append("## 数据源")
+            lines.append("")
+            for source in features['data_sources']:
+                lines.append(f"- {source}")
+            lines.append("")
+        
+        # 分类
+        if features.get('categories'):
+            lines.append("## 支持的分类")
+            lines.append("")
+            lines.append("| 分类 | 说明 |")
+            lines.append("|------|------|")
+            for cat in features['categories']:
+                lines.append(f"| `{cat}` | - |")
+            lines.append("")
+        
+        # ============ 从 meta.json 读取 ============
+        meta_file = Path(f"./skills/{project_name}/meta.json")
+        if meta_file.exists():
+            try:
+                with open(meta_file, 'r', encoding='utf-8') as f:
+                    meta = json.load(f)
+                
+                if meta.get('description') and not project_description:
+                    lines.append("## 技能描述")
+                    lines.append("")
+                    lines.append(meta['description'])
+                    lines.append("")
+                
+                # 依赖（合并自动提取的）
+                all_deps = set(meta.get('dependencies', []))
+                all_deps.update(features.get('dependencies', []))
+                
+                if all_deps:
+                    lines.append("## 依赖")
+                    lines.append("")
+                    lines.append("```bash")
+                    for dep in all_deps:
+                        lines.append(f"pip install {dep}")
+                    lines.append("```")
+                    lines.append("")
+                
+                # 参数说明
+                if meta.get('inputs'):
+                    lines.append("## 参数说明")
+                    lines.append("")
+                    lines.append("| 参数 | 类型 | 默认值 | 说明 |")
+                    lines.append("|------|------|--------|------|")
+                    for inp in meta['inputs']:
+                        name = inp.get('name', '')
+                        dtype = inp.get('type', 'string')
+                        default = inp.get('default', '')
+                        desc = inp.get('description', '')
+                        lines.append(f"| `{name}` | {dtype} | `{default}` | {desc} |")
+                    lines.append("")
+                
+                if meta.get('outputs'):
+                    lines.append("## 输出")
+                    lines.append("")
+                    lines.append("| 字段 | 说明 |")
+                    lines.append("|------|------|")
+                    for out in meta['outputs']:
+                        name = out.get('name', '')
+                        desc = out.get('description', '')
+                        lines.append(f"| `{name}` | {desc} |")
+                    lines.append("")
+                    
+            except Exception as e:
+                logger.warning(f"读取 meta.json 失败: {e}")
+        
+        # ============ 使用方法 ============
+        lines.append("## 使用方法")
+        lines.append("")
+        lines.append("```bash")
+        lines.append(f"python -m markflow.cli.commands execute {project_name} [参数]")
+        lines.append("```")
+        lines.append("")
+        
+        # 示例
+        lines.append("### 示例")
+        lines.append("")
+        lines.append("```bash")
+        lines.append(f"python -m markflow.cli.commands execute {project_name} [参数]")
+        lines.append("```")
+        lines.append("")
+        
+        # 输出位置
+        lines.append("## 输出位置")
+        lines.append("")
+        lines.append(f"生成的输出保存在 `skills/{project_name}/output/` 目录下。")
+        lines.append("")
+        
+        lines.append("---")
+        lines.append("")
+        lines.append(f"*文档自动生成于 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
+        
+        return '\n'.join(lines)
+    
+    def _generate_readme_md_old(self, parsed_files: List[Dict], project_name: str,
                            project_description: str, author: str) -> str:
         """生成 README 文档 - 增强版"""
         lines = []
@@ -1113,3 +1469,125 @@ class DocGenerator:
 
     def __repr__(self):
         return f"<DocGenerator(name={self.name}, version={self.version})>"
+        
+# 在 skill.py 文件末尾添加
+if __name__ == '__main__':
+    import argparse
+    import sys
+    
+    parser = argparse.ArgumentParser(
+        description='代码文档自动生成器 - 从 Python 代码自动生成 API 文档',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  # 生成 README
+  python skill.py --code_path="./skills/sd_image_generator/skill.py" --doc_type="readme" --project_name="sd_image_generator"
+  
+  # 生成所有文档
+  python skill.py --code_path="./skills/sd_image_generator" --doc_type="all"
+  
+  # 生成 API 参考文档（HTML格式）
+  python skill.py --code_path="./my_project" --doc_type="api" --output_format="html"
+        """
+    )
+    
+    parser.add_argument(
+        '--code_path', 
+        required=True, 
+        help='要分析的 Python 代码路径（文件或目录）'
+    )
+    parser.add_argument(
+        '--project_name', 
+        help='项目名称（默认使用路径名）'
+    )
+    parser.add_argument(
+        '--doc_type', 
+        default='all', 
+        choices=['api', 'readme', 'all'],
+        help='文档类型: api=API参考, readme=README, all=全部（默认: all）'
+    )
+    parser.add_argument(
+        '--output_format', 
+        default='md', 
+        choices=['md', 'html'],
+        help='输出格式: md=Markdown, html=HTML（默认: md）'
+    )
+    parser.add_argument(
+        '--project_description', 
+        default='',
+        help='项目描述'
+    )
+    parser.add_argument(
+        '--author', 
+        default='',
+        help='作者名称'
+    )
+    parser.add_argument(
+        '--skill_name',
+        help='技能名称（输出目录名，默认使用 project_name）'
+    )
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='显示详细日志'
+    )
+    
+    args = parser.parse_args()
+    
+    # 确定项目名称
+    code_path_obj = Path(args.code_path)
+    if not args.project_name:
+        if code_path_obj.is_file():
+            args.project_name = code_path_obj.stem
+        else:
+            args.project_name = code_path_obj.name
+    
+    # 配置日志级别
+    config = {}
+    if args.verbose:
+        config['log_level'] = 'DEBUG'
+    else:
+        config['log_level'] = 'INFO'
+    
+    # 创建生成器
+    generator = DocGenerator(config)
+    
+    # 执行
+    print(f"🚀 开始生成文档...")
+    print(f"📂 代码路径: {args.code_path}")
+    print(f"📝 项目名称: {args.project_name}")
+    print(f"📄 文档类型: {args.doc_type}")
+    print(f"📁 输出格式: {args.output_format}")
+    print("-" * 50)
+    
+    result = generator.execute(
+        code_path=args.code_path,
+        project_name=args.project_name,
+        doc_type=args.doc_type,
+        output_format=args.output_format,
+        project_description=args.project_description,
+        author=args.author,
+        skill_name_param=args.skill_name or args.project_name
+    )
+    
+    print("-" * 50)
+    
+    if result['status'] == 'success':
+        print(f"✅ 文档生成成功！")
+        print(f"📁 保存位置: {result['result']['doc_path']}")
+        print(f"📄 生成文件:")
+        for f in result['result']['saved_files']:
+            print(f"   - {f}")
+        
+        if args.verbose:
+            print(f"\n📊 统计信息:")
+            summary = result['result']['modules_summary']
+            print(f"   - 文件数: {summary['total_files']}")
+            print(f"   - 类数: {summary['total_classes']}")
+            print(f"   - 函数数: {summary['total_functions']}")
+        
+        print(f"\n⏱️  耗时: {result['result']['generation_time']}")
+    else:
+        print(f"❌ 文档生成失败!")
+        print(f"错误: {result.get('error', '未知错误')}")
+        sys.exit(1)        
