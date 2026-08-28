@@ -1,47 +1,44 @@
 # language_learner
 
-## 描述
+> 多语言学习助手，支持 17 种语言的单词、语法、句子学习，集成语音发音和完整的词典管理
 
-多语言学习助手，支持 17 种语言的单词、语法、句子学习，集成语音发音和完整的词典管理
-
-## 目的
+## 技能描述
 
 提供多语言学习能力，包括闪卡记忆、选择题测验、句子练习、语法学习、复习模式，以及完整的词典下载和管理功能
 
-## 功能特性
+## 核心功能
 
-- 17 种语言支持，总计 58 万+ 词汇量
-- 闪卡学习模式 - 高效的单词记忆方式
-- 选择题测验 - 检验学习成果
-- 句子练习 - 学习实际应用场景
-- 语法学习 - 掌握语言规则
-- 复习模式 - 巩固已学知识
-- 语音合成 - 支持多语言发音 (Edge TTS)
-- 学习进度追踪 - 记录学习统计
-- 完整词典下载 - 一键下载各语言词典
-- 知识库管理 - 添加/导入/导出单词和句子
+1. 闪卡学习模式 - 高效的单词记忆方式
+2. 选择题测验 - 检验学习成果
+3. 句子练习 - 学习实际应用场景
+4. 语法学习 - 掌握语言规则
+5. 复习模式 - 巩固已学知识
+6. 语音合成 - 支持多语言发音 (Edge TTS)
+7. 学习进度追踪 - 记录学习统计
+8. 完整词典下载 - 一键下载各语言词典
+9. 知识库管理 - 添加/导入/导出单词和句子
 
 ## 支持的语言
 
-| 语言   | 代码  | 词条数    | 数据源                |
-| ---- | --- | ------ | ------------------ |
-| 英语   | en  | 87,353 | WordNet (OMW)      |
-| 西班牙语 | es  | 90,851 | WordNet (OMW)      |
-| 法语   | fr  | 55,316 | WordNet (OMW)      |
-| 意大利语 | it  | 41,829 | WordNet (OMW)      |
-| 葡萄牙语 | pt  | 50,000 | WordNet (OMW)      |
-| 荷兰语  | nl  | 43,066 | WordNet (OMW)      |
-| 波兰语  | pl  | 45,342 | WordNet (OMW)      |
-| 芬兰语  | fi  | 50,000 | WordNet (OMW)      |
-| 希腊语  | el  | 18,216 | WordNet (OMW)      |
-| 阿拉伯语 | ar  | 17,772 | WordNet (OMW)      |
-| 希伯来语 | he  | 5,325  | WordNet (OMW)      |
-| 泰语   | th  | 50,000 | WordNet (OMW)      |
-| 瑞典语  | sv  | 5,823  | WordNet (OMW)      |
-| 日语   | ja  | 15,012 | Jamdict            |
-| 中文   | zh  | 10,000 | CEDICT + Jieba     |
-| 德语   | de  | 230    | OpenThesaurus + 内置 |
-| 韩语   | ko  | 132    | 内置词库               |
+| 语言 | 代码 | 词条数 | 数据源 |
+|------|------|--------|--------|
+| 英语 | en | 87,353 | WordNet (OMW) |
+| 西班牙语 | es | 90,851 | WordNet (OMW) |
+| 法语 | fr | 55,316 | WordNet (OMW) |
+| 意大利语 | it | 41,829 | WordNet (OMW) |
+| 葡萄牙语 | pt | 50,000 | WordNet (OMW) |
+| 荷兰语 | nl | 43,066 | WordNet (OMW) |
+| 波兰语 | pl | 45,342 | WordNet (OMW) |
+| 芬兰语 | fi | 50,000 | WordNet (OMW) |
+| 希腊语 | el | 18,216 | WordNet (OMW) |
+| 阿拉伯语 | ar | 17,772 | WordNet (OMW) |
+| 希伯来语 | he | 5,325 | WordNet (OMW) |
+| 泰语 | th | 50,000 | WordNet (OMW) |
+| 瑞典语 | sv | 5,823 | WordNet (OMW) |
+| 日语 | ja | 15,012 | Jamdict |
+| 中文 | zh | 10,000 | CEDICT + Jieba |
+| 德语 | de | 230 | OpenThesaurus + 内置 |
+| 韩语 | ko | 132 | 内置词库 |
 
 ## 输入
 
@@ -219,7 +216,7 @@ result = learner.execute(
 )
 ```
 
-### 输出位置
+## 输出位置
 
 |路径    |说明|
 |------|------|
@@ -228,10 +225,20 @@ result = learner.execute(
 |skills/language_learner/output/audio/    |语音合成文件|
 |skills/language_learner/output/export/    |导出的知识库|
 
-### 词典数据目录
+## 词典数据目录
 
 | 路径 | 说明 |
 |------|------|
 | skills/language_learner/knowledge/nltk_data/ | NLTK WordNet/OMW 数据 |
 | skills/language_learner/knowledge/jamdict_data/ | Jamdict 日语词典数据 |
 | skills/language_learner/knowledge/chinese_data/ | CEDICT 中文词典数据 |
+
+## 使用示例
+```bash
+python -m markflow.cli.commands execute language_learner action="list"
+
+python -m markflow.cli.commands execute language_learner action="flashcard" language="it" count=10
+
+python -m markflow.cli.commands execute language_learner action="speak" language="ja" text="こんにちは"
+
+```
