@@ -23,18 +23,18 @@ if str(project_root) not in sys.path:
 try:
     import torch
     from PIL import Image
-    from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
     DIFFUSERS_AVAILABLE = True
 except ImportError:
     DIFFUSERS_AVAILABLE = False
-    logger.warning("diffusers 未安装")
+    logger.warning("torch 或 PIL 未安装")
 
+# ==================== 引入真正的底层引擎（方案1） ====================
 try:
-    from skills.controlnet.skill import Controlnet
-    CONTROLNET_AVAILABLE = True
-except ImportError:
-    CONTROLNET_AVAILABLE = False
-    logger.warning("ControlNet 技能不可用")
+    from skills.controlnet_img2img.skill import ControlNetImg2Img
+    CONTROLNET_ENGINE_AVAILABLE = True
+except ImportError as e:
+    CONTROLNET_ENGINE_AVAILABLE = False
+    logger.warning(f"通用 ControlNet 引擎不可用: {e}")
 
 # ==================== 风格配置 ====================
 REALISM_STYLES = {
@@ -81,19 +81,7 @@ AVAILABLE_MODELS = {
         "size": "2.13 GB",
         "type": "摄影",
         "description": "真实摄影风格"
-    },
-    "detailAsianRealistic_v60X21b.safetensors": {
-        "name": "Detail Asian Realistic",
-        "size": "2.13 GB",
-        "type": "亚洲写实",
-        "description": "细节丰富的亚洲写实"
-    },
-    "real_asia.safetensors": {
-        "name": "Real Asia",
-        "size": "1.82 GB",
-        "type": "亚洲写实",
-        "description": "轻量级亚洲人像"
-    },
+    }
 }
 
 
@@ -107,6 +95,8 @@ class SketchToReal:
 
         self.skill_dir = Path(__file__).parent.absolute()
         self.project_root = self.skill_dir.parent.parent.parent
+        
+        # ==================== 强制本技能输出目录 ====================
         self.output_dir = self.skill_dir / "output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -121,17 +111,15 @@ class SketchToReal:
         self.default_negative = self.config.get('default_negative', 'ugly, deformed, blurry, low quality, sketch, drawing, lineart, 2d')
 
         # 缓存
-        self.pipeline = None
-        self.current_model = None
-        self.controlnet_skill = None
+        self.controlnet_engine = None
 
-        # 初始化 ControlNet 技能（用于提取线稿）
-        if CONTROLNET_AVAILABLE:
+        # ==================== 初始化底层引擎 ====================
+        if CONTROLNET_ENGINE_AVAILABLE:
             try:
-                self.controlnet_skill = Controlnet(config={'device': self.device, 'max_size': 512})
-                logger.info("  ControlNet 技能初始化成功")
+                self.controlnet_engine = ControlNetImg2Img(config={'device': self.device})
+                logger.info("  ✅ 底层引擎初始化成功")
             except Exception as e:
-                logger.warning(f"  ControlNet 技能初始化失败: {e}")
+                logger.warning(f"  底层引擎初始化失败: {e}")
 
         self._setup_logging()
         self._setup_config()
@@ -164,12 +152,10 @@ class SketchToReal:
         if not model_name:
             model_name = self.default_model
 
-        # 直接查找
         direct_path = self.models_dir / model_name
         if direct_path.exists():
             return direct_path
 
-        # 子目录查找
         filename = os.path.basename(model_name)
         for subdir in ['sd-v1-5', 'sdxl']:
             sub_path = self.models_dir / subdir / filename
@@ -184,75 +170,6 @@ class SketchToReal:
 
         logger.error(f"未找到模型: {model_name}")
         return None
-
-    def _load_pipeline(self, model_name: str) -> bool:
-        """加载 ControlNet Pipeline（普通 SD + Lineart ControlNet）"""
-        if not DIFFUSERS_AVAILABLE:
-            logger.error("diffusers 未安装")
-            return False
-
-        model_path = self._find_model(model_name)
-        if not model_path:
-            logger.error(f"模型不存在: {model_name}")
-            return False
-
-        try:
-            from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
-
-            # 加载 Lineart ControlNet
-            logger.info("加载 ControlNet: lllyasviel/control_v11p_sd15_lineart")
-            controlnet = ControlNetModel.from_pretrained(
-                "lllyasviel/control_v11p_sd15_lineart",
-                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
-            )
-
-            # 加载普通 SD + ControlNet Pipeline（不是 Inpaint）
-            pipe = StableDiffusionControlNetPipeline.from_single_file(
-                str(model_path),
-                controlnet=controlnet,
-                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
-                safety_checker=None,
-                requires_safety_checker=False,
-            )
-            pipe.to(self.device)
-            pipe.enable_attention_slicing()
-            self.pipeline = pipe
-            self.current_model = model_name
-            logger.info(f"✅ ControlNet Pipeline 加载成功: {model_name}")
-            return True
-
-        except Exception as e:
-            logger.error(f"加载模型失败: {e}")
-            return False
-
-    def _generate_lineart_image(self, image: Image.Image) -> Optional[Image.Image]:
-        """使用 ControlNet 技能提取线稿（作为控制图）"""
-        if self.controlnet_skill is None:
-            return None
-        try:
-            result = self.controlnet_skill.execute(
-                action='detect_pose',
-                image=image,
-                controlnet_type='lineart',
-                output_path=None
-            )
-            if result['status'] == 'success':
-                output_path = result['output_path']
-                if os.path.exists(output_path):
-                    return Image.open(output_path)
-            return None
-        except Exception as e:
-            logger.warning(f"  线稿图生成失败: {e}")
-            return None
-
-    def _resize_image(self, image: Image.Image) -> tuple:
-        w, h = image.size
-        max_size = 768
-        if max(w, h) > max_size:
-            ratio = max_size / max(w, h)
-            new_w, new_h = int(w * ratio), int(h * ratio)
-            image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        return image, image.size
 
     def list_styles(self) -> Dict[str, Any]:
         return {"status": "success", "styles": list(REALISM_STYLES.keys())}
@@ -280,13 +197,18 @@ class SketchToReal:
         logger.info(f"执行技能: {self.name} v{self.version}")
 
         try:
-            # 1. 获取参数
+            # ==================== 1. 严格路径校验 ====================
             image_path = kwargs.get('image_path') or kwargs.get('input')
-            if not image_path or not os.path.exists(image_path):
-                return {"status": "error", "error": f"图片不存在: {image_path}"}
+            if not image_path:
+                return {"status": "error", "error": "image_path 是必填参数"}
+            
+            abs_image_path = Path(image_path).absolute()
+            if not os.path.exists(abs_image_path):
+                return {"status": "error", "error": f"输入图片不存在: {abs_image_path}。请检查路径是否正确！"}
 
             output_path = kwargs.get('output_path') or kwargs.get('output')
-            model_name = kwargs.get('model_name') or kwargs.get('model') or self.default_model
+
+            # 提示词与风格配置
             style = kwargs.get('style', self.default_style)
             if style not in REALISM_STYLES:
                 return {"status": "error", "error": f"未知风格: {style}，可用: {list(REALISM_STYLES.keys())}"}
@@ -295,72 +217,48 @@ class SketchToReal:
             prompt = kwargs.get('prompt') or s_config['prompt']
             negative_prompt = kwargs.get('negative_prompt') or s_config.get('negative', self.default_negative)
 
-            steps = kwargs.get('steps', self.default_steps)
-            seed = kwargs.get('seed', -1)
-
-            # 2. 加载模型
-            if not self._load_pipeline(model_name):
-                return {"status": "error", "error": f"无法加载模型: {model_name}"}
-
-            # 3. 加载图片
-            image = Image.open(image_path).convert("RGB")
-            image, original_size = self._resize_image(image)
+            # ==================== 2. 直接调用底层 ControlNet 引擎 ====================
+            if self.controlnet_engine is None:
+                return {"status": "error", "error": "底层 ControlNet 引擎不可用"}
 
             logger.info(f"风格: {style}")
-            logger.info(f"模型: {model_name}")
             logger.info(f"提示词: {prompt[:80]}...")
 
-            # 4. 提取线稿作为控制图
-            control_image = self._generate_lineart_image(image)
-            if control_image is None:
-                logger.warning("  线稿提取失败，使用原图作为控制图")
-                control_image = image
-
-            # 5. 设置种子
-            if seed == -1:
-                seed = random.randint(0, 2**32 - 1)
-            generator = torch.Generator(device=self.device).manual_seed(seed)
-
-            # 6. 构建提示词
-            full_prompt = f"{prompt}, realistic, detailed, masterpiece, best quality"
-
-            # 7. 执行生成（使用 ControlNet Pipeline，不需要遮罩）
-            pipeline_kwargs = {
-                'prompt': full_prompt,
-                'negative_prompt': negative_prompt if negative_prompt else None,
-                'image': control_image,
-                'num_inference_steps': steps,
-                'guidance_scale': 7.5,
-                'generator': generator,
-                'width': image.size[0],
-                'height': image.size[1],
-            }
-
-            result = self.pipeline(**pipeline_kwargs).images[0]
-
-            # 8. 保存结果
+            # 如果没传 output_path，默认存到本技能的 output 目录
             if output_path is None:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_path = str(self.output_dir / f"{Path(image_path).stem}_sketch2real_{style}_{timestamp}.png")
+                output_path = str(self.output_dir / f"{Path(abs_image_path).stem}_sketch2real_{style}_{timestamp}.png")
 
-            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-            result.save(output_path)
+            # 核心逻辑：传入 HED (提取线稿) + Lineart 底层模型
+            result = self.controlnet_engine.execute(
+                input_image_path=str(abs_image_path),  # 绝对路径
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                preprocessor_type="HED",               # 提取线稿
+                controlnet_model="lineart",            # 强制使用本地 lineart 模型（你本地的 models--lllyasviel--control_v11p_sd15_lineart）
+                strength=0.85,                         # 高强度重绘，让线稿变真人
+                output_path=output_path                # 强制指定输出
+            )
 
-            return {
-                "status": "success",
-                "output_path": output_path,
-                "style": style,
-                "model": model_name,
-                "generation_time": f"{time.time() - start_time:.2f}s",
-                "parameters": {
-                    "steps": steps,
-                    "seed": seed,
-                    "prompt": prompt,
-                    "negative_prompt": negative_prompt,
-                    "controlnet": "lineart"
-                },
-                "timestamp": datetime.now().isoformat()
-            }
+            # 检查引擎返回结果
+            if result['status'] == 'success':
+                return {
+                    "status": "success",
+                    "output_path": result.get('image_path', output_path),
+                    "style": style,
+                    "generation_time": f"{time.time() - start_time:.2f}s",
+                    "parameters": {
+                        "steps": kwargs.get('steps', self.default_steps),
+                        "seed": kwargs.get('seed', -1),
+                        "prompt": prompt,
+                        "negative_prompt": negative_prompt,
+                        "controlnet": "lineart"
+                    },
+                    "timestamp": datetime.now().isoformat()
+                }
+            else:
+                # 引擎报错，直接把引擎的错误原样抛出
+                return {"status": "error", "error": result.get('error', '底层引擎调用失败')}
 
         except Exception as e:
             logger.error(f"执行失败: {e}")
@@ -450,7 +348,6 @@ if __name__ == "__main__":
         print(f"\n✅ 成功!")
         print(f"  📁 输出: {result['output_path']}")
         print(f"  🎨 风格: {result['style']}")
-        print(f"  🤖 模型: {result['model']}")
         print(f"  ⏱️  耗时: {result['generation_time']}")
         print(f"  📋 参数:")
         for key, value in result['parameters'].items():

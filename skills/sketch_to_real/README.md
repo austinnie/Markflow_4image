@@ -58,6 +58,16 @@ python -m markflow.cli.commands execute sketch_to_real image_path="sketch.jpg" o
 
 # 自定义提示词
 python -m markflow.cli.commands execute sketch_to_real image_path="sketch.jpg" output_path="output/real.png" prompt="a beautiful woman, photorealistic" style=realistic
+
+# 使用默认模型 anytimeRealistic_v10
+python -m markflow.cli.commands execute sketch_to_real image_path="skills\sketch_to_real/test6.png" output_path="skills/sketch_to_real/output/cinematic.png" style=cinematic
+
+# 使用亚洲写实模型
+python -m markflow.cli.commands execute sketch_to_real image_path="skills\sketch_to_real/test6.png" output_path="skills/sketch_to_real/output/cinematic_asian.png" style=cinematic model_name=asianrealisticSdlife_v40.safetensors
+
+# 使用 DreamShaper（艺术风格）
+python -m markflow.cli.commands execute sketch_to_real image_path="skills\sketch_to_real/test6.png" output_path="skills/sketch_to_real/output/cinematic_art.png" style=cinematic model_name=DreamShaper_8_pruned.safetensors
+
 ```
 
 ## 输出位置
