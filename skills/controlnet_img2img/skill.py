@@ -52,7 +52,7 @@ class ControlNetImg2Img:
         return None
 
     def _load_base_pipeline(self, base_model_path, controlnet_key: str = "canny"):
-        """懒加载底模和 ControlNet 模型（支持单文件底模）"""
+        """懒加载底模和 ControlNet 模型（CPU版优化）"""
         from diffusers import StableDiffusionControlNetImg2ImgPipeline, ControlNetModel
         
         if self.pipe is not None:
@@ -64,30 +64,27 @@ class ControlNetImg2Img:
             raise ValueError(f"找不到对应的 ControlNet 模型: {controlnet_key}")
 
         self.logger.info(f"加载 ControlNet: {cn_path}")
+        
+        # ✅ 重要：CPU 必须使用 float32，不能使用 float16！
         controlnet = ControlNetModel.from_pretrained(
-            cn_path, torch_dtype=torch.float16
+            cn_path, torch_dtype=torch.float32
         )
 
-        # ✅ 处理单文件底模的情况
         self.logger.info(f"准备加载底模: {base_model_path}")
         if base_model_path.endswith('.safetensors') or base_model_path.endswith('.ckpt'):
-            # 如果是单文件，使用 from_single_file 加载
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_single_file(
                 base_model_path,
                 controlnet=controlnet,
-                torch_dtype=torch.float16,
+                torch_dtype=torch.float32,  # ✅ 改成 float32
                 safety_checker=None,
-                # 提示：如果你加载时遇到 VAE 问题，可以加上 vae 参数
-                # vae="path/to/vae/folder" 
-            ).to("cuda" if torch.cuda.is_available() else "cpu")
+            ).to("cpu")  # ✅ 强制使用 CPU
         else:
-            # 如果是文件夹，正常加载
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 base_model_path,
                 controlnet=controlnet,
-                torch_dtype=torch.float16,
+                torch_dtype=torch.float32,  # ✅ 改成 float32
                 safety_checker=None,
-            ).to("cuda" if torch.cuda.is_available() else "cpu")
+            ).to("cpu")  # ✅ 强制使用 CPU
         
         return self.pipe
         
