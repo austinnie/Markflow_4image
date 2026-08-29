@@ -1,0 +1,96 @@
+set HF_HOME=E:\SD_OpenVINO\models\controlnet
+set HF_XET_HIGH_PERFORMANCE=1
+set HF_XET_NUM_CONCURRENT_RANGE_GETS=32
+
+# canny
+python -c "from diffusers import ControlNetModel; ControlNetModel.from_pretrained('lllyasviel/sd-controlnet-canny')"
+
+# depth
+python -c "from diffusers import ControlNetModel; ControlNetModel.from_pretrained('lllyasviel/sd-controlnet-depth')"
+
+# hed
+python -c "from diffusers import ControlNetModel; ControlNetModel.from_pretrained('lllyasviel/sd-controlnet-hed')"
+
+# normal
+python -c "from diffusers import ControlNetModel; ControlNetModel.from_pretrained('lllyasviel/sd-controlnet-normal')"
+
+# mlsd
+python -c "from diffusers import ControlNetModel; ControlNetModel.from_pretrained('lllyasviel/sd-controlnet-mlsd')"
+
+# scribble
+python -c "from diffusers import ControlNetModel; ControlNetModel.from_pretrained('lllyasviel/sd-controlnet-scribble')"
+
+
+python cli.py bird_sketch -i test.jpg --controlnet canny -n 1 --steps 10 --no-lora
+
+
+
+python -m markflow.cli.commands execute photo_realistic image_path="skills/controlnet_img2img/test.jpg" ai_realistic=True enable_exif=True
+
+
+但为了匹配我们刚刚确立的架构标准（复用 controlnet_img2img 引擎、严格校验路径、默认本技能目录输出），以及解决它目前严重依赖旧的 skills.controlnet 和联网加载模型的问题，我为你做了彻底重构。
+
+
+
+python -m markflow.cli.commands execute remove_clothes image_path="skills/controlnet_img2img/test.jpg"
+
+python -m markflow.cli.commands execute old_photo_restore image_path="skills/controlnet_img2img/test.jpg" style="vibrant"
+
+python -m markflow.cli.commands execute real_to_anime image_path="skills/controlnet_img2img/test.jpg" style="modern"
+
+python -m markflow.cli.commands execute remove_object image_path="skills/controlnet_img2img/test.jpg" skip_manual=True
+
+python -m markflow.cli.commands execute replace_object image_path="skills/controlnet_img2img/test.jpg" object_prompt="a red sports car" skip_manual=True
+
+
+python -m markflow.cli.commands execute fantasy_character image_path="skills/controlnet_img2img/test.jpg" fantasy_type="elf"
+
+python -m markflow.cli.commands execute change_perspective image_path="skills/controlnet_img2img/test.jpg" perspective="aerial"
+
+python -m markflow.cli.commands execute change_skin_tone image_path="skills/controlnet_img2img/test.jpg" tone="tan"
+
+python -m markflow.cli.commands execute colorize_sketch image_path="skills/controlnet_img2img/test.jpg" style="anime"
+
+python -m markflow.cli.commands execute day_night_transfer image_path="skills/controlnet_img2img/test.jpg" mode="night"
+
+python -m markflow.cli.commands execute change_lighting image_path="skills/controlnet_img2img/test.jpg" lighting="golden_hour"
+
+python -m markflow.cli.commands execute change_makeup image_path="skills/controlnet_img2img/test.jpg" style="glamour"
+
+python -m markflow.cli.commands execute change_nationality image_path="skills/controlnet_img2img/test.jpg" ethnicity="caucasian"
+
+python -m markflow.cli.commands execute change_furniture image_path="skills/controlnet_img2img/test.jpg" style="scandinavian"
+
+python -m markflow.cli.commands execute change_gender image_path="skills/controlnet_img2img/test.jpg" direction="male_to_female"
+
+python -m markflow.cli.commands execute change_hair image_path="skills/controlnet_img2img/test.jpg" style="long_flowing" color="pink"
+
+python -m markflow.cli.commands execute change_eye_color image_path="skills/controlnet_img2img/test.jpg" color="green"
+
+python -m markflow.cli.commands execute change_face image_path="skills/controlnet_img2img/test.jpg" prompt="beautiful face, natural smile, masterpiece"
+
+python -m markflow.cli.commands execute change_expression image_path="skills/controlnet_img2img/test.jpg" expression="smile"
+
+python -m markflow.cli.commands execute change_body_type image_path="skills/controlnet_img2img/test.jpg" body_type="muscular"
+
+python -m markflow.cli.commands execute change_clothing_style image_path="skills/controlnet_img2img/test.jpg" style="futuristic"
+
+python -m markflow.cli.commands execute anime_to_real image_path="skills/controlnet_img2img/test.jpg" style="photorealistic"
+
+python -m markflow.cli.commands execute change_age image_path="skills/controlnet_img2img/test.jpg" age="old"
+
+python -m markflow.cli.commands execute add_animal_ears image_path="skills/controlnet_img2img/test.jpg" animal="cat"
+
+python -m markflow.cli.commands execute add_background_objects image_path="skills/controlnet_img2img/test.jpg" object="flowers"
+
+python -m markflow.cli.commands execute add_glasses image_path="skills/controlnet_img2img/test.jpg" style="round"
+
+python -m markflow.cli.commands execute add_tattoo image_path="skills/controlnet_img2img/test.jpg" tattoo="dragon"
+
+python -m markflow.cli.commands execute style_transfer image_path="skills/controlnet_img2img/test.jpg" style="watercolor"
+
+python -m markflow.cli.commands execute weather_transfer image_path="skills/controlnet_img2img/test.jpg" weather="rainy"
+
+python -m markflow.cli.commands execute season_transfer image_path="skills/controlnet_img2img/test.jpg" season="winter"
+
+python -m markflow.cli.commands execute change_background image_path="skills/controlnet_img2img/test.jpg" preset="beach"

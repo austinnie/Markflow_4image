@@ -1,0 +1,79 @@
+依赖安装
+1. Python 依赖包
+
+
+# 核心依赖
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+pip install diffusers transformers accelerate
+pip install opencv-python-headless
+pip install Pillow numpy
+
+# ControlNet 辅助（姿态检测）
+pip install controlnet-aux
+
+# YOLO 人体检测（自动遮罩）
+pip install ultralytics
+
+# 可选：如果需要 GPU 加速
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+
+2. 模型文件
+模型	大小	下载方式	说明
+SD Inpaint 模型	~3 GB	Civitai 或 HuggingFace	去衣服/换衣服的核心模型
+ControlNet 模型	~1.5 GB	首次运行自动下载	姿态控制
+OpenPose 模型	~209 MB	首次运行自动下载	人体姿态检测
+YOLOv8 模型	~6 MB	首次运行自动下载	人体分割遮罩
+
+
+模型下载方式
+自动下载（推荐）
+首次运行时会自动下载所有需要的模型：
+
+bash
+# 运行任意命令，模型自动下载
+python -m markflow.cli.commands execute remove_clothes image_path="test.jpg"
+手动下载
+1. SD Inpaint 模型（去衣服专用）
+
+来源	链接
+Civitai	搜索 inpaint
+HuggingFace	zenityX_inpaint
+推荐下载：zenityXmix.inpainting.safetensors (2.96 GB)
+
+
+# 下载 ControlNet 模型
+python scripts/download_controlnet.py
+
+# 使用镜像加速（国内用户）
+set HF_ENDPOINT=https://hf-mirror.com
+python scripts/download_controlnet.py
+
+模型存放位置
+模型	存放目录
+SD Inpaint 模型	E:\SD_OpenVINO\models\sd-v1-5\
+ControlNet 模型	自动下载到 HuggingFace 缓存
+YOLO 模型	自动下载到当前目录
+
+
+
+
+cd E:\SD_OpenVINO\MarkFlow
+
+# 使用默认参数测试（ControlNet: canny）
+python -m markflow.cli.commands execute remove_clothes image_path="skills/remove_clothes/female-hat5.jpg"
+
+# 或使用 openpose（更好保持姿态）
+python -m markflow.cli.commands execute remove_clothes image_path="skills/remove_clothes/female-hat5.jpg" controlnet_type=openpose
+
+
+# 2. 使用 openpose（推荐换衣服）
+python -m markflow.cli.commands execute remove_clothes image_path="skills/remove_clothes/female-hat5.jpg" controlnet_type=openpose
+
+# 3. 降低 strength（保留更多原图细节）
+python -m markflow.cli.commands execute remove_clothes image_path="skills/remove_clothes/female-hat5.jpg" strength=0.35
+
+# 4. 手动绘制遮罩
+python -m markflow.cli.commands execute remove_clothes image_path="skills/remove_clothes/female-hat5.jpg" manual_mask=True
+
+# 5. 批量处理
+python skills/remove_clothes/skill.py --input skills/remove_clothes/ --batch -o output/

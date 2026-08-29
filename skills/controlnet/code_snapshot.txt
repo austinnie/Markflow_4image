@@ -1,0 +1,1612 @@
+====================================================================================================
+📸 ControlNet 代码快照
+====================================================================================================
+  生成时间: 2026-08-27 23:59:02
+  项目路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet
+  文件限制: 2000 行/文件
+====================================================================================================
+
+📊 项目统计
+----------------------------------------------------------------------------------------------------
+  代码文件总数: 9
+
+📁 按目录分布:
+    (根目录): 9 个文件
+
+📄 按文件类型分布:
+    .py: 4 个文件
+    .md: 2 个文件
+    .sh: 1 个文件
+    .json: 1 个文件
+    .txt: 1 个文件
+
+====================================================================================================
+
+📄 文件内容
+====================================================================================================
+
+----------------------------------------------------------------------------------------------------
+[   1/9] 📄 download_controlnet.py
+  大小: 1,979 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\download_controlnet.py
+----------------------------------------------------------------------------------------------------
+# scripts/download_controlnet.py
+"""
+下载 ControlNet 模型（仅下载不需要 mediapipe 的类型）
+"""
+
+import os
+import sys
+from pathlib import Path
+
+
+def download_controlnet(controlnet_type: str = "canny"):
+    """下载指定 ControlNet 模型"""
+    model_ids = {
+        "canny": "lllyasviel/sd-controlnet-canny",
+        "hed": "lllyasviel/sd-controlnet-hed",
+        "lineart": "lllyasviel/control_v11p_sd15_lineart",
+        "depth": "lllyasviel/sd-controlnet-depth",
+        "normal": "lllyasviel/sd-controlnet-normal",
+        "mlsd": "lllyasviel/sd-controlnet-mlsd",
+        "openpose": "lllyasviel/sd-controlnet-openpose",
+    }
+    
+    if controlnet_type not in model_ids:
+        print(f"❌ 不支持的 ControlNet 类型: {controlnet_type}")
+        return False
+    
+    model_id = model_ids[controlnet_type]
+    print(f"📦 下载 {controlnet_type} 模型: {model_id}")
+    
+    try:
+        from diffusers import ControlNetModel
+        controlnet = ControlNetModel.from_pretrained(model_id)
+        print(f"✅ {controlnet_type} 模型下载完成")
+        return True
+    except ImportError:
+        print("❌ diffusers 未安装")
+        return False
+    except Exception as e:
+        print(f"❌ 下载失败: {e}")
+        return False
+
+
+def main():
+    print("=" * 60)
+    print("  下载 ControlNet 模型")
+    print("=" * 60)
+    print()
+    print("支持的 ControlNet 类型:")
+    print("  - canny    边缘检测 (推荐)")
+    print("  - hed      软边缘检测")
+    print("  - lineart  线稿提取")
+    print("  - depth    深度图")
+    print("  - normal   法线图")
+    print("  - mlsd     直线检测")
+    print("  - openpose 姿态检测 (需要 mediapipe)")
+    print()
+    
+    types = ["canny", "hed", "lineart", "depth", "normal", "mlsd"]
+    
+    for t in types:
+        download_controlnet(t)
+        print()
+
+
+if __name__ == "__main__":
+    main()
+
+----------------------------------------------------------------------------------------------------
+[   2/9] 📄 generate_snapshot.py
+  大小: 9,481 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\generate_snapshot.py
+----------------------------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+ControlNet 代码快照生成器
+生成项目所有代码文件的文本快照，用于代码审查和文档记录
+"""
+
+import os
+import sys
+from pathlib import Path
+from datetime import datetime
+from typing import List, Set
+
+# ============ 配置 ============
+
+# 要扫描的目录（当前脚本所在目录）
+PROJECT_ROOT = Path(__file__).parent.absolute()
+
+# 输出文件
+OUTPUT_FILE = PROJECT_ROOT / "code_snapshot.txt"
+
+# 要包含的文件扩展名
+INCLUDE_EXTENSIONS = {
+    '.py',           # Python
+    '.yaml', '.yml', # 配置文件
+    '.md',           # Markdown
+    '.txt',          # 文本
+    '.sh',           # Shell 脚本
+    '.json',         # JSON
+    '.cfg', '.conf', # 配置文件
+    '.js', '.css',   # Web
+    '.html',         # HTML
+    '.xml',          # XML
+}
+
+# 要排除的目录
+EXCLUDE_DIRS = {
+    '__pycache__',
+    '.git',
+    '.github',
+    '.vscode',
+    '.idea',
+    'tmp',
+    'output',
+    'logs',
+    'ckpts',
+    'models',
+    'mmcv',
+    'mmseg',
+    'ldm',
+    'annotator/midas/midas',      # 第三方库
+    'annotator/uniformer/mmcv',
+    'annotator/uniformer/mmseg',
+    'annotator/uniformer/exp',
+}
+
+# 要排除的文件名（完整文件名）
+EXCLUDE_FILES = {
+    'LICENSE',
+    'LICENSE.md',
+    '.gitignore',
+    '.gitattributes',
+    '.gitmodules',
+    '.dockerignore',
+    'Dockerfile',
+    'Makefile',
+    'CMakeLists.txt',
+    'cog.yaml',
+    'environment.yaml',
+    'download_weights.py',
+    'tutorial_dataset.py',
+    'tutorial_dataset_test.py',
+    'tutorial_train.py',
+    'utils.py',                   # 根目录的工具文件
+}
+
+# 排除包含这些关键词的文件
+EXCLUDE_PATH_KEYWORDS = {
+    'ckpts',            # 检查点文件
+    'output',           # 输出目录
+    'tmp',              # 临时目录
+    '__pycache__',      # Python 缓存
+    '.git',             # Git 目录
+    'mmcv',             # 第三方库
+    'mmseg',            # 第三方库
+    'ldm',              # 第三方库
+}
+
+# 每个文件最大读取行数（防止大文件）
+MAX_LINES_PER_FILE = 2000
+
+# ============ 工具函数 ============
+
+def should_exclude(path: Path, root: Path) -> bool:
+    """判断文件/目录是否应该被排除"""
+    try:
+        rel_path = path.relative_to(root)
+    except ValueError:
+        return True
+    
+    # 检查目录排除
+    for part in path.parts:
+        if part in EXCLUDE_DIRS:
+            return True
+    
+    # 检查路径关键词排除
+    for keyword in EXCLUDE_PATH_KEYWORDS:
+        if keyword in str(path).lower():
+            return True
+    
+    # 检查文件名排除
+    if path.name in EXCLUDE_FILES:
+        return True
+    
+    return False
+
+def get_code_files(root: Path) -> List[Path]:
+    """递归获取所有代码文件"""
+    code_files = []
+    
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirpath = Path(dirpath)
+        
+        # 过滤排除的目录
+        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
+        
+        # 检查当前目录是否应该排除
+        if should_exclude(dirpath, root):
+            continue
+        
+        for filename in filenames:
+            filepath = dirpath / filename
+            
+            # 检查文件是否应该排除
+            if should_exclude(filepath, root):
+                continue
+            
+            # 检查文件扩展名
+            ext = filepath.suffix.lower()
+            if ext not in INCLUDE_EXTENSIONS:
+                continue
+            
+            code_files.append(filepath)
+    
+    return sorted(code_files)
+
+def read_file_content(filepath: Path) -> str:
+    """读取文件内容，处理编码问题"""
+    encodings = ['utf-8', 'gbk', 'gb2312', 'latin-1']
+    
+    for encoding in encodings:
+        try:
+            with open(filepath, 'r', encoding=encoding) as f:
+                lines = []
+                for i, line in enumerate(f):
+                    if i >= MAX_LINES_PER_FILE:
+                        lines.append(f"\n... (文件超出 {MAX_LINES_PER_FILE} 行，已截断) ...\n")
+                        break
+                    lines.append(line.rstrip('\n'))
+                return '\n'.join(lines)
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+        except Exception:
+            continue
+    
+    return f"[无法读取文件内容 (编码尝试: {', '.join(encodings)})]"
+
+def get_file_info(filepath: Path, root: Path) -> str:
+    """获取文件信息"""
+    try:
+        rel_path = filepath.relative_to(root)
+    except ValueError:
+        rel_path = filepath
+    
+    size = filepath.stat().st_size
+    return f"  📄 {rel_path} ({size:,} bytes)"
+
+def generate_snapshot() -> str:
+    """生成代码快照"""
+    lines = []
+    
+    # ========== 头部 ==========
+    lines.append("=" * 100)
+    lines.append("📸 ControlNet 代码快照")
+    lines.append("=" * 100)
+    lines.append(f"  生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append(f"  项目路径: {PROJECT_ROOT}")
+    lines.append(f"  文件限制: {MAX_LINES_PER_FILE} 行/文件")
+    lines.append("=" * 100)
+    lines.append("")
+    
+    # ========== 项目概览 ==========
+    # 统计信息
+    all_files = get_code_files(PROJECT_ROOT)
+    
+    # 按扩展名统计
+    ext_counts = {}
+    for f in all_files:
+        ext = f.suffix.lower() or '无扩展名'
+        ext_counts[ext] = ext_counts.get(ext, 0) + 1
+    
+    # 按目录统计
+    dir_counts = {}
+    for f in all_files:
+        try:
+            rel = f.relative_to(PROJECT_ROOT)
+            parent = rel.parent
+            dir_key = str(parent) if str(parent) != '.' else '(根目录)'
+            dir_counts[dir_key] = dir_counts.get(dir_key, 0) + 1
+        except:
+            pass
+    
+    lines.append("📊 项目统计")
+    lines.append("-" * 100)
+    lines.append(f"  代码文件总数: {len(all_files)}")
+    lines.append("")
+    
+    lines.append("📁 按目录分布:")
+    for dir_name, count in sorted(dir_counts.items(), key=lambda x: -x[1])[:20]:
+        lines.append(f"    {dir_name}: {count} 个文件")
+    if len(dir_counts) > 20:
+        lines.append(f"    ... 还有 {len(dir_counts) - 20} 个目录")
+    lines.append("")
+    
+    lines.append("📄 按文件类型分布:")
+    for ext, count in sorted(ext_counts.items(), key=lambda x: -x[1]):
+        lines.append(f"    {ext}: {count} 个文件")
+    lines.append("")
+    
+    lines.append("=" * 100)
+    lines.append("")
+    
+    # ========== 文件内容 ==========
+    lines.append("📄 文件内容")
+    lines.append("=" * 100)
+    lines.append("")
+    
+    for idx, filepath in enumerate(all_files, 1):
+        try:
+            rel_path = filepath.relative_to(PROJECT_ROOT)
+        except ValueError:
+            rel_path = filepath
+        
+        # 文件头
+        lines.append("-" * 100)
+        lines.append(f"[{idx:>4}/{len(all_files)}] 📄 {rel_path}")
+        lines.append(f"  大小: {filepath.stat().st_size:,} bytes")
+        lines.append(f"  路径: {filepath}")
+        lines.append("-" * 100)
+        
+        # 文件内容
+        content = read_file_content(filepath)
+        lines.append(content)
+        lines.append("")  # 空行分隔
+    
+    # ========== 尾部 ==========
+    lines.append("=" * 100)
+    lines.append("📸 快照生成完成")
+    lines.append("=" * 100)
+    lines.append(f"  总文件数: {len(all_files)}")
+    lines.append(f"  生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append("=" * 100)
+    
+    return '\n'.join(lines)
+
+# ============ 主程序 ============
+
+def main():
+    print("=" * 70)
+    print("📸 ControlNet 代码快照生成器")
+    print("=" * 70)
+    print(f"📂 项目路径: {PROJECT_ROOT}")
+    print(f"📄 输出文件: {OUTPUT_FILE}")
+    print("")
+    
+    # 检查项目路径是否存在
+    if not PROJECT_ROOT.exists():
+        print("❌ 项目路径不存在！")
+        sys.exit(1)
+    
+    print("📂 扫描代码文件...")
+    files = get_code_files(PROJECT_ROOT)
+    print(f"   找到 {len(files)} 个代码文件")
+    
+    # 显示文件列表（前10个）
+    print("\n📄 文件列表（前 10 个）:")
+    for i, f in enumerate(files[:10], 1):
+        try:
+            rel = f.relative_to(PROJECT_ROOT)
+        except:
+            rel = f
+        print(f"   {i:2}. {rel}")
+    if len(files) > 10:
+        print(f"   ... 还有 {len(files) - 10} 个文件")
+    
+    print("\n" + "=" * 70)
+    print("📝 生成快照...")
+    
+    # 生成快照
+    snapshot = generate_snapshot()
+    
+    # 保存到文件
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+        f.write(snapshot)
+    
+    print(f"✅ 快照已保存: {OUTPUT_FILE}")
+    
+    # 文件大小
+    size = OUTPUT_FILE.stat().st_size
+    if size > 1024 * 1024:
+        print(f"📦 文件大小: {size / (1024 * 1024):.2f} MB")
+    elif size > 1024:
+        print(f"📦 文件大小: {size / 1024:.2f} KB")
+    else:
+        print(f"📦 文件大小: {size} bytes")
+    
+    print("=" * 70)
+    print("✅ 完成！")
+
+if __name__ == "__main__":
+    main()
+
+----------------------------------------------------------------------------------------------------
+[   3/9] 📄 install.sh
+  大小: 1,173 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\install.sh
+----------------------------------------------------------------------------------------------------
+#!/bin/bash
+# ControlNet 技能依赖安装脚本 (Linux/Mac)
+
+echo "============================================"
+echo "  ControlNet 技能依赖安装"
+echo "============================================"
+echo ""
+
+echo "[1/5] 安装 PyTorch..."
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+echo ""
+echo "[2/5] 安装 diffusers 和相关库..."
+pip install diffusers transformers accelerate
+
+echo ""
+echo "[3/5] 安装 OpenCV..."
+pip install opencv-python-headless
+
+echo ""
+echo "[4/5] 安装 controlnet_aux..."
+pip install controlnet-aux
+
+echo ""
+echo "[5/5] 安装 Pillow 和 numpy..."
+pip install Pillow numpy
+
+echo ""
+echo "============================================"
+echo "  ✅ 安装完成！"
+echo "============================================"
+echo ""
+echo "支持的 ControlNet 类型（无需 mediapipe）:"
+echo "  - canny    边缘检测"
+echo "  - hed      软边缘检测"
+echo "  - lineart  线稿提取"
+echo "  - depth    深度图"
+echo "  - normal   法线图"
+echo "  - mlsd     直线检测"
+echo ""
+echo "验证安装:"
+echo "  python skills/controlnet/test_controlnet.py"
+
+----------------------------------------------------------------------------------------------------
+[   4/9] 📄 meta.json
+  大小: 2,339 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\meta.json
+----------------------------------------------------------------------------------------------------
+{
+  "name": "ControlNet",
+  "version": "1.0.0",
+  "description": "提供姿态检测和 ControlNet 控制能力，支持 OpenPose、Canny、Depth 等多种 ControlNet 类型",
+  "tags": ["controlnet", "pose", "depth", "canny", "openpose"],
+  "dependencies": [
+    "diffusers",
+    "controlnet-aux",
+    "opencv-python-headless",
+    "torch",
+    "Pillow",
+    "numpy"
+  ],
+  "inputs": [
+    {
+      "name": "action",
+      "type": "string",
+      "description": "操作类型: status, list_types, detect_pose, load_pipeline",
+      "required": false,
+      "default": "status"
+    },
+    {
+      "name": "image",
+      "type": "string",
+      "description": "输入图片路径 (detect_pose 操作)",
+      "required": false
+    },
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径 (detect_pose 操作, 同 image)",
+      "required": false
+    },
+    {
+      "name": "output_path",
+      "type": "string",
+      "description": "输出图片路径 (detect_pose 操作)",
+      "required": false
+    },
+    {
+      "name": "model_path",
+      "type": "string",
+      "description": "SD 模型路径 (load_pipeline 操作)",
+      "required": false
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "description": "ControlNet 类型: openpose, openpose_full, dwpose, canny, hed, lineart, depth, normal, mlsd",
+      "required": false,
+      "default": "openpose"
+    },
+    {
+      "name": "device",
+      "type": "string",
+      "description": "设备: cpu 或 cuda",
+      "required": false,
+      "default": "cpu"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "status",
+      "description": "执行状态: success 或 error"
+    },
+    {
+      "name": "output_path",
+      "description": "生成的 ControlNet 控制图路径 (detect_pose 操作)"
+    },
+    {
+      "name": "controlnet_type",
+      "description": "使用的 ControlNet 类型"
+    },
+    {
+      "name": "types",
+      "description": "所有支持的 ControlNet 类型列表 (list_types 操作)"
+    },
+    {
+      "name": "dependencies",
+      "description": "依赖检查状态 (status 操作)"
+    }
+  ],
+  "config": {
+    "max_size": 512,
+    "controlnet_strength": 0.8
+  },
+  "class_name": "Controlnet"
+}
+
+----------------------------------------------------------------------------------------------------
+[   5/9] 📄 README.md
+  大小: 8,140 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\README.md
+----------------------------------------------------------------------------------------------------
+# ControlNet
+
+> 提供姿态检测和 ControlNet 控制能力
+
+## 概览
+
+- **文件数**: 1
+- **类数**: 1
+- **方法数**: 6
+
+## 技能描述
+
+提供姿态检测和 ControlNet 生成能力，支持 OpenPose、Canny、Depth、HED、Lineart、Normal、MLSD 等多种 ControlNet 类型。
+
+## 依赖
+
+```bash
+pip install diffusers
+pip install controlnet-aux
+pip install opencv-python-headless
+pip install torch
+pip install Pillow
+pip install numpy
+```
+
+##  ControlNet 模型
+ControlNet 技能需要下载 ControlNet 模型，首次运行时会自动从 HuggingFace 下载。
+
+### 自动下载（推荐）：
+
+运行以下命令会自动下载模型：
+
+```bash
+# 查看状态（会自动检查并下载缺失的模型）
+python -m markflow.cli.commands execute controlnet action=status
+
+# 或直接检测姿态
+python -m markflow.cli.commands execute controlnet action=detect_pose image="test.jpg"
+```
+
+### 手动下载：
+
+如果自动下载失败，可以运行下载脚本：
+
+```bash
+# 直接下载
+python scripts/download_controlnet.py
+
+# 使用镜像加速（国内用户）
+set HF_ENDPOINT=https://hf-mirror.com
+python scripts/download_controlnet.py
+```
+
+### 模型列表
+
+| 模型 | 大小 | 用途 |
+|------|------|------|
+| `lllyasviel/control_v11p_sd15_openpose` | ~1.5 GB | OpenPose 姿态检测 |
+| `lllyasviel/sd-controlnet-canny` | ~1.5 GB | Canny 边缘检测 |
+| `lllyasviel/sd-controlnet-depth` | ~1.5 GB | Depth 深度检测 |
+| `lllyasviel/sd-controlnet-hed` | ~1.5 GB | HED 软边缘检测 |
+| `lllyasviel/control_v11p_sd15_lineart` | ~1.5 GB | Lineart 线稿提取 |
+| `lllyasviel/sd-controlnet-normal` | ~1.5 GB | Normal 法线检测 |
+| `lllyasviel/sd-controlnet-mlsd` | ~1.5 GB | MLSD 直线检测 |
+
+> **注**：首次运行 `detect_pose` 时会自动下载对应的 ControlNet 模型。
+
+
+### 缓存位置：
+
+模型默认下载到 HuggingFace 缓存目录：
+
+```text
+C:\Users\用户名\.cache\huggingface\hub\
+```
+
+或自定义缓存位置：
+
+```bash
+set HF_HOME=E:\hf_cache\.cache
+python -m markflow.cli.commands execute controlnet action=detect_pose image="test.jpg"
+```
+
+
+## 参数说明
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `action` | string | `status` | 操作类型: status, list_types, detect_pose, load_pipeline |
+| `image` | string | - | 输入图片路径 (detect_pose 操作) |
+| `image_path` | string | - | 输入图片路径 (detect_pose 操作, 同 image) |
+| `output_path` | string | - | 输出图片路径 (detect_pose 操作) |
+| `model_path` | string | - | SD 模型路径 (load_pipeline 操作) |
+| `controlnet_type` | string | `openpose` | ControlNet 类型: openpose, openpose_full, dwpose, canny, hed, lineart, depth, normal, mlsd |
+| `device` | string | `cpu` | 设备: cpu 或 cuda |
+
+
+## 输出
+
+| 字段 | 说明 |
+|------|------|
+| `status` | 执行状态: success 或 error |
+| `output_path` | 生成的 ControlNet 控制图路径 (detect_pose 操作) |
+| `controlnet_type` | 使用的 ControlNet 类型 |
+| `types` | 所有支持的 ControlNet 类型列表 (list_types 操作) |
+| `dependencies` | 依赖检查状态 (status 操作) |
+
+
+## 使用方法
+
+### 方式一：通过 CLI 调用
+```bash
+python -m markflow.cli.commands execute controlnet [参数]
+```
+
+## 示例
+
+```bash
+# 查看状态
+python -m markflow.cli.commands execute controlnet action=status
+
+# 列出支持的 ControlNet 类型
+python -m markflow.cli.commands execute controlnet action=list_types
+
+# 检测姿态（生成控制图）
+python -m markflow.cli.commands execute controlnet action=detect_pose image="test.jpg" output_path="pose.png"
+
+# 使用不同 ControlNet 类型
+python -m markflow.cli.commands execute controlnet action=detect_pose image="test.jpg" controlnet_type=canny output_path="canny.png"
+
+# 加载 ControlNet Pipeline
+python -m markflow.cli.commands execute controlnet action=load_pipeline model_path="E:/SD_OpenVINO/models/sd-v1-5/zenityXmix.inpainting.safetensors" controlnet_type=openpose
+```
+
+### 方式二：直接运行 skill.py
+
+```bash
+python skills/controlnet/skill.py [参数]
+```
+
+## 示例
+
+```bash
+# 查看状态
+python skills/controlnet/skill.py --action status
+
+# 检测姿态
+python skills/controlnet/skill.py --action detect_pose --image test.jpg --output-path pose.png
+
+# 使用不同 ControlNet 类型
+python skills/controlnet/skill.py --action detect_pose --image test.jpg --controlnet-type canny --output-path canny.png
+
+# 加载 ControlNet Pipeline
+python skills/controlnet/skill.py --action load_pipeline --model-path "E:/SD_OpenVINO/models/sd-v1-5/zenityXmix.inpainting.safetensors" --controlnet-type openpose
+```
+
+## 输出位置
+
+生成的输出保存在 skills/controlnet/output/ 目录下。
+
+## ControlNet 控制能力
+
+ControlNet 的作用是：**在保持原图某些特征（姿态、轮廓、深度等）不变的前提下，用 AI 重绘图片内容。**
+
+### ControlNet 类型说明
+
+| 类型 | 锁定的内容 | 应用场景 |
+|------|-----------|----------|
+| `openpose` | 人体姿态骨架 | 换衣服、换装、保持动作不变 |
+| `canny` | 边缘轮廓 | 保持构图、换风格 |
+| `depth` | 空间深度结构 | 换背景、保持场景布局 |
+| `hed` | 软边缘 | 风格转换、更灵活的重绘 |
+| `lineart` | 线稿 | 线稿上色、二次元风格转换 |
+| `normal` | 法线图 | 保持光影结构 |
+| `mlsd` | 直线 | 建筑/室内设计风格转换 |
+| `openpose_full` | 完整姿态（含手部/面部） | 精细姿态控制 |
+
+### 实际应用场景
+
+#### 1. 换衣服
+- **输入**：有人物的照片
+- **操作**：用 `openpose` 锁定姿态，用 Inpaint 遮罩衣服区域
+- **输出**：同一个人，同样的姿势，衣服被替换
+
+#### 2. 风格转换
+- **输入**：一张照片
+- **操作**：用 `canny` 或 `hed` 锁定轮廓，改变提示词
+- **输出**：同一构图，变成油画/水彩/动漫风格
+
+#### 3. 换背景
+- **输入**：一张人像
+- **操作**：用 `depth` 锁定深度结构，改变背景描述
+- **输出**：同一个人，姿态不变，背景完全改变
+
+#### 4. 线稿上色
+- **输入**：一张线稿
+- **操作**：用 `lineart` 锁定线稿，添加颜色提示词
+- **输出**：上色后的完整图片
+
+#### 5. 图片修复/扩展
+- **输入**：破损或裁剪过的图片
+- **操作**：用 `canny` 锁定现有边缘，用 Inpaint 填充缺失部分
+- **输出**：修复后的完整图片
+
+#### 6. 保持姿态的角色生成
+- **输入**：一张参考姿势图
+- **操作**：用 `openpose` 提取姿态，改变人物描述
+- **输出**：不同角色、相同姿势
+
+#### 7. 建筑/室内设计
+- **输入**：建筑或室内照片
+- **操作**：用 `mlsd` 锁定直线结构
+- **输出**：保持建筑结构，改变材质/风格
+
+### 命令示例
+
+```bash
+# 1. 换衣服（锁定姿态）
+python -m markflow.cli.commands execute remove_clothes image_path="person.jpg" controlnet_type=openpose
+
+# 2. 风格转换（锁定边缘）
+python -m markflow.cli.commands execute controlnet action=detect_pose image="photo.jpg" controlnet_type=canny
+
+# 3. 换背景（锁定深度）
+python -m markflow.cli.commands execute controlnet action=detect_pose image="photo.jpg" controlnet_type=depth
+
+# 4. 线稿上色
+python -m markflow.cli.commands execute controlnet action=detect_pose image="sketch.jpg" controlnet_type=lineart
+```
+
+### 与其他技能配合
+
+| 配合技能 | 效果 |
+|----------|------|
+| `sd_image_generator` | 从零生成图片 |
+| `remove_clothes` | 换衣服 |
+| `photo_restorer` | 修复老照片 |
+| 自建技能 | 根据需求定制 |
+
+### ControlNet 能力总结
+
+| 能力 | 说明 |
+|------|------|
+| 锁定姿态 | 保持人物动作不变 |
+| 锁定轮廓 | 保持构图不变 |
+| 锁定深度 | 保持空间结构不变 |
+| 锁定线稿 | 保持线条不变 |
+| 保持光影 | 保持光照结构不变 |
+| 任意组合 | 8 种类型，按需选择 |
+
+----------------------------------------------------------------------------------------------------
+[   6/9] 📄 requirements.txt
+  大小: 274 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\requirements.txt
+----------------------------------------------------------------------------------------------------
+# ControlNet 技能依赖（无需 mediapipe）
+# 安装: pip install -r requirements.txt
+
+torch>=2.0.0
+torchvision>=0.15.0
+diffusers>=0.26.0
+transformers>=4.40.0
+accelerate>=1.14.0
+opencv-python-headless>=4.9.0
+controlnet-aux>=0.0.10
+Pillow>=10.0.0
+numpy>=1.24.0
+
+----------------------------------------------------------------------------------------------------
+[   7/9] 📄 skill.md
+  大小: 1,200 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\skill.md
+----------------------------------------------------------------------------------------------------
+# ControlNet
+
+## 描述
+提供姿态检测和 ControlNet 控制能力，支持 OpenPose、Canny、Depth 等多种 ControlNet 类型
+
+## 目的
+为其他技能（如 remove_clothes）提供 ControlNet 姿态检测和生成能力，保持人物姿态不变
+
+## 输入
+- **action**: 操作类型: status, list_types, detect_pose, load_pipeline
+- **image**: 输入图片路径 (detect_pose 操作)
+- **image_path**: 输入图片路径 (detect_pose 操作, 同 image)
+- **output_path**: 输出图片路径 (detect_pose 操作)
+- **model_path**: SD 模型路径 (load_pipeline 操作)
+- **controlnet_type**: ControlNet 类型: openpose, openpose_full, dwpose, canny, hed, lineart, depth, normal, mlsd
+- **device**: 设备: cpu 或 cuda
+
+## 输出
+- **status**: 执行状态: success 或 error
+- **output_path**: 生成的 ControlNet 控制图路径 (detect_pose 操作)
+- **controlnet_type**: 使用的 ControlNet 类型
+- **types**: 所有支持的 ControlNet 类型列表 (list_types 操作)
+- **dependencies**: 依赖检查状态 (status 操作)
+
+## 步骤
+无
+
+## 依赖
+- diffusers
+- controlnet-aux
+- opencv-python-headless
+- torch
+- Pillow
+- numpy
+
+## 版本
+1.0.0
+
+----------------------------------------------------------------------------------------------------
+[   8/9] 📄 skill.py
+  大小: 18,788 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\skill.py
+----------------------------------------------------------------------------------------------------
+"""
+ControlNet - 提供姿态检测和 ControlNet 控制能力
+"""
+
+import os
+import sys
+import json
+import time
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any, Optional, Union
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ==================== 依赖检查 ====================
+try:
+    import torch
+    import numpy as np
+    from PIL import Image
+    import cv2
+    TORCH_AVAILABLE = True
+except ImportError as e:
+    TORCH_AVAILABLE = False
+    logger.warning(f"基础依赖未安装: {e}")
+
+try:
+    from diffusers import ControlNetModel, StableDiffusionControlNetPipeline
+    DIFFUSERS_AVAILABLE = True
+except ImportError as e:
+    DIFFUSERS_AVAILABLE = False
+    logger.warning(f"diffusers 未安装: {e}")
+
+try:
+    from controlnet_aux import (
+        OpenposeDetector,
+        CannyDetector,
+        HEDdetector,
+        MidasDetector,
+        LineartDetector,
+        NormalBaeDetector,
+        MLSDdetector,
+        DWposeDetector,
+    )
+    CONTROLNET_AUX_AVAILABLE = True
+except ImportError as e:
+    CONTROLNET_AUX_AVAILABLE = False
+    logger.warning(f"controlnet_aux 未安装: {e}")
+
+
+# ==================== ControlNet 类型配置（无需 mediapipe） ====================
+CONTROLNET_TYPES = {
+    "canny": {
+        "name": "Canny (边缘)",
+        "model_id": "lllyasviel/sd-controlnet-canny",
+        "preprocessor": "canny",
+        "description": "边缘轮廓控制，适合保持构图"
+    },
+    "hed": {
+        "name": "HED (软边缘)",
+        "model_id": "lllyasviel/sd-controlnet-hed",
+        "preprocessor": "hed",
+        "description": "软边缘检测，更灵活"
+    },
+    "lineart": {
+        "name": "Lineart (线稿)",
+        "model_id": "lllyasviel/control_v11p_sd15_lineart",
+        "preprocessor": "lineart",
+        "description": "线稿提取，适合二次元"
+    },
+    "depth": {
+        "name": "Depth (深度)",
+        "model_id": "lllyasviel/sd-controlnet-depth",
+        "preprocessor": "depth",
+        "description": "深度图控制，适合保持空间结构"
+    },
+    "normal": {
+        "name": "Normal (法线)",
+        "model_id": "lllyasviel/sd-controlnet-normal",
+        "preprocessor": "normal",
+        "description": "法线图控制，适合保持光影"
+    },
+    "mlsd": {
+        "name": "MLSD (直线)",
+        "model_id": "lllyasviel/sd-controlnet-mlsd",
+        "preprocessor": "mlsd",
+        "description": "直线检测，适合建筑"
+    },
+    "openpose": {
+        "name": "OpenPose (姿态)",
+        "model_id": "lllyasviel/sd-controlnet-openpose",
+        "preprocessor": "openpose",
+        "description": "检测人体姿态骨架，适合换装、换姿势"
+    },
+    "openpose_full": {
+        "name": "OpenPose Full (完整姿态)",
+        "model_id": "lllyasviel/control_v11p_sd15_openpose",
+        "preprocessor": "openpose_full",
+        "description": "全身姿态 + 手指 + 面部表情"
+    },
+}
+
+
+class Controlnet:
+    """
+    ControlNet 技能
+
+    提供:
+        1. 姿态检测 (detect_pose)
+        2. ControlNet Pipeline 加载 (load_pipeline)
+        3. 状态查看 (status)
+        4. 类型列表 (list_types)
+    """
+
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        初始化 ControlNet 技能
+
+        Args:
+            config: 配置字典
+                - device: 设备 (cpu/cuda)
+                - max_size: 最大尺寸
+                - cache_dir: 缓存目录
+        """
+        self.config = config or {}
+        self.name = "ControlNet"
+        self.version = "1.0.0"
+
+        # 获取技能目录
+        self.skill_dir = Path(__file__).parent.absolute()
+        self.output_dir = self.skill_dir / "output"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # 配置
+        self.device = self.config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
+        self.max_size = self.config.get('max_size', 512)
+        self.cache_dir = self.config.get('cache_dir', str(self.skill_dir / 'cache'))
+
+        # 缓存
+        self._pipelines = {}
+        self._detectors = {}
+
+        self._setup_logging()
+        self._setup_config()
+
+        logger.info(f"ControlNet 初始化完成")
+        logger.info(f"  设备: {self.device}")
+        logger.info(f"  最大尺寸: {self.max_size}")
+        logger.info(f"  diffusers: {'✅' if DIFFUSERS_AVAILABLE else '❌'}")
+        logger.info(f"  controlnet_aux: {'✅' if CONTROLNET_AUX_AVAILABLE else '❌'}")
+
+    def _setup_logging(self):
+        """设置日志"""
+        log_level = self.config.get('log_level', 'INFO')
+        logging.basicConfig(
+            level=getattr(logging, log_level.upper()),
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+
+    def _setup_config(self):
+        """设置配置默认值"""
+        defaults = {
+            'max_size': 512,
+            'controlnet_strength': 0.8,
+            'device': self.device,
+        }
+        for key, value in defaults.items():
+            if key not in self.config:
+                self.config[key] = value
+
+        Path(self.cache_dir).mkdir(parents=True, exist_ok=True)
+
+    def _get_detector(self, controlnet_type: str):
+        """获取或创建检测器"""
+        if not CONTROLNET_AUX_AVAILABLE:
+            return None
+
+        if controlnet_type in self._detectors:
+            return self._detectors[controlnet_type]
+
+        try:
+            #detectors = {
+            #    "openpose": lambda: OpenposeDetector.from_pretrained("lllyasviel/ControlNet"),  # 修改这里
+            #    "openpose_full": lambda: OpenposeDetector.from_pretrained("lllyasviel/ControlNet"),
+            #    "dwpose": lambda: DWposeDetector.from_pretrained("lllyasviel/ControlNet"),
+            #    "canny": lambda: CannyDetector(),
+            #    "hed": lambda: HEDdetector.from_pretrained("lllyasviel/ControlNet"),
+            #    "lineart": lambda: LineartDetector.from_pretrained("lllyasviel/ControlNet"),
+            #    "depth": lambda: MidasDetector.from_pretrained("lllyasviel/ControlNet"),
+            #    "normal": lambda: NormalBaeDetector.from_pretrained("lllyasviel/ControlNet"),
+            #    "mlsd": lambda: MLSDdetector.from_pretrained("lllyasviel/ControlNet"),
+            #}
+
+            detectors = {
+                "openpose": lambda: OpenposeDetector.from_pretrained("lllyasviel/Annotators"),
+                "openpose_full": lambda: OpenposeDetector.from_pretrained("lllyasviel/Annotators"),
+                #"dwpose": lambda: DWposeDetector(),  # 🔥 修复：不需要 from_pretrained
+                "canny": lambda: CannyDetector(),
+                "hed": lambda: HEDdetector.from_pretrained("lllyasviel/Annotators"),
+                "lineart": lambda: LineartDetector.from_pretrained("lllyasviel/Annotators"),
+                "depth": lambda: MidasDetector.from_pretrained("lllyasviel/Annotators"),
+                "normal": lambda: NormalBaeDetector.from_pretrained("lllyasviel/Annotators"),
+                "mlsd": lambda: MLSDdetector.from_pretrained("lllyasviel/Annotators"),
+            }
+
+            if controlnet_type in detectors:
+                logger.info(f"加载检测器: {controlnet_type}")
+                self._detectors[controlnet_type] = detectors[controlnet_type]()
+                return self._detectors[controlnet_type]
+            else:
+                logger.warning(f"不支持的检测器类型: {controlnet_type}")
+                return None
+
+        except Exception as e:
+            logger.error(f"加载检测器失败 ({controlnet_type}): {e}")
+            return None
+
+    def detect_pose(
+        self,
+        image: Union[str, Image.Image],
+        controlnet_type: str = "openpose",
+        output_path: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        检测图片姿态，生成 ControlNet 控制图
+
+        Args:
+            image: 图片路径或 PIL Image
+            controlnet_type: ControlNet 类型
+            output_path: 输出路径 (可选)
+
+        Returns:
+            执行结果
+        """
+        start_time = time.time()
+        logger.info(f"检测姿态: controlnet_type={controlnet_type}")
+
+        # 1. 检查依赖
+        if not CONTROLNET_AUX_AVAILABLE:
+            return {
+                "status": "error",
+                "error": "controlnet_aux 未安装，请运行: pip install controlnet-aux"
+            }
+
+        # 2. 加载图片
+        try:
+            if isinstance(image, str):
+                if not os.path.exists(image):
+                    return {"status": "error", "error": f"图片不存在: {image}"}
+                pil_image = Image.open(image).convert("RGB")
+                image_path = image
+            else:
+                pil_image = image.convert("RGB")
+                image_path = None
+        except Exception as e:
+            return {"status": "error", "error": f"加载图片失败: {e}"}
+
+        # 3. 获取检测器
+        detector = self._get_detector(controlnet_type)
+        if detector is None:
+            return {
+                "status": "error",
+                "error": f"无法加载检测器: {controlnet_type}"
+            }
+
+        # 4. 生成控制图
+        try:
+            # 调整尺寸
+            w, h = pil_image.size
+            if max(w, h) > self.max_size:
+                scale = self.max_size / max(w, h)
+                new_w = int(w * scale)
+                new_h = int(h * scale)
+                pil_image = pil_image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+            # 执行检测
+            if controlnet_type == "openpose":
+                result = detector(pil_image, output_type="pil", include_hands=False, include_face=False)
+            elif controlnet_type == "openpose_full":
+                result = detector(pil_image, output_type="pil", include_hands=True, include_face=True)
+            else:
+                result = detector(pil_image, output_type="pil")
+
+            if result is None:
+                return {"status": "error", "error": "姿态检测返回空结果"}
+
+            # 5. 保存结果
+            if output_path is None:
+                if image_path:
+                    base, ext = os.path.splitext(image_path)
+                    filename = f"{os.path.basename(base)}_{controlnet_type}_control.png"
+                    output_path = str(self.output_dir / filename)
+                else:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    output_path = str(self.output_dir / f"pose_{controlnet_type}_{timestamp}.png")
+
+            result.save(output_path)
+
+            return {
+                "status": "success",
+                "output_path": output_path,
+                "controlnet_type": controlnet_type,
+                "processing_time": f"{time.time() - start_time:.2f}s",
+                "size": result.size,
+                "timestamp": datetime.now().isoformat()
+            }
+
+        except Exception as e:
+            logger.error(f"姿态检测失败: {e}")
+            return {"status": "error", "error": str(e)}
+
+    def get_pipeline(
+        self,
+        model_path: str,
+        controlnet_type: str = "openpose"
+    ) -> Dict[str, Any]:
+        """
+        加载 ControlNet Pipeline
+
+        Args:
+            model_path: SD 模型路径
+            controlnet_type: ControlNet 类型
+
+        Returns:
+            执行结果
+        """
+        logger.info(f"加载 ControlNet Pipeline: model={model_path}, type={controlnet_type}")
+
+        # 1. 检查依赖
+        if not DIFFUSERS_AVAILABLE:
+            return {
+                "status": "error",
+                "error": "diffusers 未安装，请运行: pip install diffusers"
+            }
+
+        # 2. 检查模型
+        if not os.path.exists(model_path):
+            return {
+                "status": "error",
+                "error": f"模型不存在: {model_path}"
+            }
+
+        # 3. 检查缓存
+        cache_key = f"{model_path}_{controlnet_type}"
+        if cache_key in self._pipelines:
+            logger.info("使用缓存的 Pipeline")
+            return {
+                "status": "success",
+                "pipeline": self._pipelines[cache_key],
+                "controlnet_type": controlnet_type,
+                "cached": True
+            }
+
+        # 4. 加载 ControlNet
+        try:
+            info = CONTROLNET_TYPES.get(controlnet_type)
+            if info is None:
+                return {
+                    "status": "error",
+                    "error": f"不支持的 ControlNet 类型: {controlnet_type}"
+                }
+
+            model_id = info["model_id"]
+            logger.info(f"加载 ControlNet 模型: {model_id}")
+
+            controlnet = ControlNetModel.from_pretrained(
+                model_id,
+                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
+                cache_dir=self.cache_dir,
+            )
+
+            # 5. 加载 Pipeline
+            logger.info(f"加载 SD 模型: {model_path}")
+            pipe = StableDiffusionControlNetPipeline.from_single_file(
+                model_path,
+                controlnet=controlnet,
+                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
+                safety_checker=None,
+                requires_safety_checker=False,
+            )
+            pipe.to(self.device)
+            pipe.enable_attention_slicing()
+
+            # 6. 缓存
+            self._pipelines[cache_key] = pipe
+
+            return {
+                "status": "success",
+                "pipeline": pipe,
+                "controlnet_type": controlnet_type,
+                "cached": False,
+                "device": self.device,
+                "timestamp": datetime.now().isoformat()
+            }
+
+        except Exception as e:
+            logger.error(f"加载 ControlNet Pipeline 失败: {e}")
+            return {"status": "error", "error": str(e)}
+
+    def list_types(self) -> Dict[str, Any]:
+        """列出所有支持的 ControlNet 类型"""
+        types = {}
+        for key, info in CONTROLNET_TYPES.items():
+            types[key] = {
+                "name": info["name"],
+                "description": info["description"],
+                "available": CONTROLNET_AUX_AVAILABLE,
+            }
+
+        return {
+            "status": "success",
+            "types": types,
+            "count": len(types),
+            "controlnet_aux_available": CONTROLNET_AUX_AVAILABLE,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    def status(self) -> Dict[str, Any]:
+        """查看 ControlNet 技能状态"""
+        return {
+            "status": "success",
+            "skill": {
+                "name": self.name,
+                "version": self.version,
+                "device": self.device,
+                "max_size": self.max_size,
+                "cache_dir": self.cache_dir,
+            },
+            "dependencies": {
+                "diffusers": DIFFUSERS_AVAILABLE,
+                "controlnet_aux": CONTROLNET_AUX_AVAILABLE,
+                "torch": TORCH_AVAILABLE,
+            },
+            "cached_pipelines": list(self._pipelines.keys()),
+            "timestamp": datetime.now().isoformat()
+        }
+
+    def execute(self, **kwargs) -> Dict[str, Any]:
+        """
+        执行 ControlNet 技能
+
+        支持的操作:
+            - status: 查看状态 (默认)
+            - list_types: 列出支持的 ControlNet 类型
+            - detect_pose: 检测姿态，生成控制图
+            - load_pipeline: 加载 ControlNet Pipeline
+        """
+        action = kwargs.get('action', 'status')
+        logger.info(f"执行 ControlNet 技能: action={action}")
+
+        if action == 'status':
+            return self.status()
+
+        elif action == 'list_types':
+            return self.list_types()
+
+        elif action == 'detect_pose':
+            image = kwargs.get('image') or kwargs.get('image_path')
+            if image is None:
+                return {"status": "error", "error": "image 或 image_path 是必填参数"}
+
+            controlnet_type = kwargs.get('controlnet_type', 'openpose')
+            output_path = kwargs.get('output_path')
+
+            return self.detect_pose(image, controlnet_type, output_path)
+
+        elif action == 'load_pipeline':
+            model_path = kwargs.get('model_path')
+            if model_path is None:
+                return {"status": "error", "error": "model_path 是必填参数"}
+
+            controlnet_type = kwargs.get('controlnet_type', 'openpose')
+
+            return self.get_pipeline(model_path, controlnet_type)
+
+        else:
+            return {
+                "status": "error",
+                "error": f"未知操作: {action}，支持: status, list_types, detect_pose, load_pipeline",
+                "timestamp": datetime.now().isoformat()
+            }
+
+    def __repr__(self):
+        return f"<Controlnet(name={self.name}, version={self.version})>"
+
+
+# 命令行入口
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="ControlNet 技能")
+    parser.add_argument("--action", default="status",
+                        choices=["status", "list_types", "detect_pose", "load_pipeline"],
+                        help="操作类型")
+    parser.add_argument("--image", help="图片路径 (detect_pose)")
+    parser.add_argument("--image-path", help="图片路径 (detect_pose, 同 image)")
+    parser.add_argument("--output-path", help="输出路径 (detect_pose)")
+    parser.add_argument("--model-path", help="SD 模型路径 (load_pipeline)")
+    parser.add_argument("--controlnet-type", default="canny",
+                        choices=list(CONTROLNET_TYPES.keys()),
+                        help="ControlNet 类型")
+    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu", help="设备")
+
+    args = parser.parse_args()
+
+    skill = Controlnet(config={'device': args.device})
+    result = skill.execute(
+        action=args.action,
+        image=args.image or args.image_path,
+        output_path=args.output_path,
+        model_path=args.model_path,
+        controlnet_type=args.controlnet_type,
+    )
+
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+----------------------------------------------------------------------------------------------------
+[   9/9] 📄 test_controlnet.py
+  大小: 6,372 bytes
+  路径: E:\SD_OpenVINO\Markflow_4image\skills\controlnet\test_controlnet.py
+----------------------------------------------------------------------------------------------------
+# skills/controlnet/test_controlnet.py
+"""
+ControlNet 技能测试脚本
+测试依赖、检测器和图像处理功能
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# 添加项目根目录到路径
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+# 直接导入 skill 模块
+from skills.controlnet.skill import Controlnet, CONTROLNET_TYPES
+
+
+def print_colored(text, color="green"):
+    """彩色输出"""
+    colors = {
+        "green": "\033[92m",
+        "red": "\033[91m",
+        "yellow": "\033[93m",
+        "cyan": "\033[96m",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    }
+    print(f"{colors.get(color, '')}{text}{colors['reset']}")
+
+
+def test_skill_status():
+    """测试技能状态"""
+    print_colored("\n📊 1. 测试 ControlNet 技能状态", "cyan")
+    print("-" * 50)
+
+    skill = Controlnet()
+    result = skill.status()
+
+    if result['status'] == 'success':
+        print_colored("   ✅ 状态查询成功", "green")
+        print(f"   技能: {result['skill']['name']} v{result['skill']['version']}")
+        print(f"   设备: {result['skill']['device']}")
+        print(f"   依赖: diffusers={result['dependencies']['diffusers']}, controlnet_aux={result['dependencies']['controlnet_aux']}")
+    else:
+        print_colored(f"   ❌ 状态查询失败: {result.get('error', '未知错误')}", "red")
+
+    return result['status'] == 'success'
+
+
+def test_list_types():
+    """测试列出 ControlNet 类型"""
+    print_colored("\n📋 2. 测试列出 ControlNet 类型", "cyan")
+    print("-" * 50)
+
+    skill = Controlnet()
+    result = skill.list_types()
+
+    if result['status'] == 'success':
+        print_colored(f"   ✅ 支持 {result['count']} 种 ControlNet 类型", "green")
+        for key, info in result['types'].items():
+            status = "✅" if info['available'] else "❌"
+            print(f"      {status} {key}: {info['name']} - {info['description']}")
+    else:
+        print_colored(f"   ❌ 列表查询失败: {result.get('error', '未知错误')}", "red")
+
+    return result['status'] == 'success'
+
+
+def test_detect_pose():
+    """测试姿态检测"""
+    print_colored("\n🖼️ 3. 测试姿态检测", "cyan")
+    print("-" * 50)
+
+    # 查找测试图片
+    test_images = [
+        "skills/remove_clothes/female-hat5.jpg",
+        "skills/remove_clothes/input/female-hat5.jpg",
+        "skills/remove_clothes/test.jpg",
+        "test.jpg",
+        "E:/SD_OpenVINO/MarkFlow/skills/remove_clothes/female-hat5.jpg",
+    ]
+
+    test_image = None
+    for path in test_images:
+        if os.path.exists(path):
+            test_image = path
+            break
+
+    if test_image is None:
+        print_colored("   ⚠️ 未找到测试图片，跳过姿态检测测试", "yellow")
+        print("   💡 请准备一张测试图片: skills/remove_clothes/female-hat5.jpg")
+        return True
+
+    print(f"   📷 使用测试图片: {test_image}")
+
+    skill = Controlnet()
+    result = skill.detect_pose(test_image, controlnet_type="openpose")
+
+    if result['status'] == 'success':
+        print_colored(f"   ✅ 姿态检测成功", "green")
+        print(f"   输出: {result['output_path']}")
+        print(f"   尺寸: {result['size']}")
+        print(f"   耗时: {result['processing_time']}")
+    else:
+        print_colored(f"   ❌ 姿态检测失败: {result.get('error', '未知错误')}", "red")
+        # 尝试使用 Canny 作为备选
+        print("   🔄 尝试使用 Canny 检测器...")
+        result2 = skill.detect_pose(test_image, controlnet_type="canny")
+        if result2['status'] == 'success':
+            print_colored(f"   ✅ Canny 检测成功", "green")
+            print(f"   输出: {result2['output_path']}")
+            return True
+        else:
+            print_colored(f"   ❌ Canny 检测也失败", "red")
+            return False
+
+    return True
+
+
+def test_all_detectors():
+    """测试所有检测器（仅检查可用性，不实际运行）"""
+    print_colored("\n🔧 4. 测试所有 ControlNet 检测器", "cyan")
+    print("-" * 50)
+
+    skill = Controlnet()
+    detectors = list(CONTROLNET_TYPES.keys())
+
+    available = []
+    failed = []
+
+    for det_type in detectors:
+        try:
+            detector = skill._get_detector(det_type)
+            if detector is not None:
+                available.append(det_type)
+            else:
+                failed.append(det_type)
+        except Exception as e:
+            failed.append(det_type)
+
+    if available:
+        print_colored(f"   ✅ 可用检测器: {len(available)}/{len(detectors)}", "green")
+        for det in available:
+            print(f"      ✅ {det}")
+    else:
+        print_colored(f"   ⚠️ 无可用检测器", "yellow")
+
+    if failed:
+        print_colored(f"   ⚠️ 不可用检测器: {len(failed)}", "yellow")
+        for det in failed:
+            print(f"      ❌ {det}")
+
+    return len(available) > 0
+
+
+def main():
+    """主测试函数"""
+    print("=" * 70)
+    print_colored("🧪 ControlNet 技能测试", "bold")
+    print("=" * 70)
+
+    results = []
+
+    # 运行所有测试
+    results.append(("状态查询", test_skill_status()))
+    results.append(("类型列表", test_list_types()))
+    results.append(("检测器可用性", test_all_detectors()))
+    results.append(("姿态检测", test_detect_pose()))
+
+    # 输出总结
+    print("\n" + "=" * 70)
+    print_colored("📊 测试总结", "bold")
+    print("=" * 70)
+
+    passed = sum(1 for _, r in results if r)
+    total = len(results)
+
+    for name, result in results:
+        status = "✅" if result else "❌"
+        color = "green" if result else "red"
+        print_colored(f"   {status} {name}", color)
+
+    if passed == total:
+        print_colored(f"\n🎉 所有测试通过 ({passed}/{total})", "green")
+        print("\n💡 ControlNet 技能已就绪，可以正常使用")
+    else:
+        print_colored(f"\n⚠️ 部分测试失败 ({passed}/{total})", "yellow")
+        print("   💡 请检查依赖安装: pip install controlnet-aux diffusers opencv-python-headless")
+
+    print("=" * 70)
+
+
+if __name__ == "__main__":
+    main()
+
+====================================================================================================
+📸 快照生成完成
+====================================================================================================
+  总文件数: 9
+  生成时间: 2026-08-27 23:59:02
+====================================================================================================
