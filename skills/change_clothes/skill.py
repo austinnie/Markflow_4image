@@ -118,7 +118,7 @@ class ChangeClothes:
             if key not in self.config:
                 self.config[key] = value
 
-        Path(self.config['output_dir']).mkdir(parents=True, exist_ok=True)
+        Path(self.config.get('output_dir', str(self.skill_dir / 'output'))).mkdir(parents=True, exist_ok=True)
 
     # ==================== 模型管理 ====================
     def _find_model(self, model_name: str) -> Optional[Path]:

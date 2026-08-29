@@ -114,7 +114,7 @@ class ChangeBackground:
             if key not in self.config:
                 self.config[key] = value
 
-        Path(self.config['output_dir']).mkdir(parents=True, exist_ok=True)
+        Path(self.config.get('output_dir', str(self.skill_dir / 'output'))).mkdir(parents=True, exist_ok=True)
 
     def list_presets(self) -> Dict[str, Any]:
         return {"status": "success", "presets": self.PRESET_BACKGROUNDS, "count": len(self.PRESET_BACKGROUNDS)}
