@@ -5,7 +5,6 @@
 import sys
 from pathlib import Path
 
-# 添加项目根目录到 Python 路径
 project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
@@ -32,7 +31,7 @@ except ImportError as e:
     DIFFUSERS_AVAILABLE = False
     logger.warning(f"依赖未安装: {e}")
 
-# 引入我们刚写完的 controlnet_img2img 底层技能作为保形引擎
+# 引入 controlnet_img2img 底层技能作为保形引擎
 try:
     from skills.controlnet_img2img.skill import ControlNetImg2Img
     CONTROLNET_ENGINE_AVAILABLE = True
@@ -52,23 +51,20 @@ except ImportError:
 
 # ==================== 技能类 ====================
 class ChangeClothes:
-    """
-    换衣服技能 - 将人物衣服替换为指定款式
-    """
+    """换衣服技能 - 将人物衣服替换为指定款式"""
 
     SUPPORTED_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
 
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.name = "change_clothes"
-        self.version = "1.0.0"
+        self.version = "2.0.0"
 
-        # ============ 1. 修改：强制设置本技能输出目录 ============
+        # 强制设置本技能输出目录
         self.skill_dir = Path(__file__).parent.absolute()
         self.project_root = self.skill_dir.parent.parent.parent
         self.models_dir = Path(self.config.get('models_dir', self.project_root / 'models'))
         
-        # 强制将默认输出目录设定为本技能的 output 文件夹
         self.default_output_dir = self.skill_dir / "output"
         self.default_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -109,7 +105,6 @@ class ChangeClothes:
 
     def _setup_config(self):
         defaults = {
-            # ============ 2. 修改：defaults 中指向本技能 output ============
             'output_dir': str(self.default_output_dir),
             'default_model': 'zenityXmix.inpainting.safetensors',
             'default_steps': 25,
@@ -150,8 +145,8 @@ class ChangeClothes:
         logger.error(f"未找到模型: '{model_name}'")
         return None
 
-    def _load_pipeline(self, model_path: Path, use_controlnet: bool = True) -> bool:
-        """加载 SD Inpaint Pipeline（真正的局部重绘底座）"""
+    def _load_pipeline(self, model_path: Path) -> bool:
+        """加载 SD Inpaint Pipeline（备用路线）"""
         try:
             self.pipeline = StableDiffusionInpaintPipeline.from_single_file(
                 str(model_path),
@@ -338,7 +333,6 @@ class ChangeClothes:
 
         try:
             logger.info(f"  ✅ 提取控制特征 ({controlnet_type})...")
-            # 核心调用：继承底层引擎的预处理能力
             control_image = self.controlnet_engine._preprocess(image, preprocessor_type=controlnet_type.upper())
             
             if control_image is not None:
@@ -450,7 +444,6 @@ class ChangeClothes:
             if not image_path:
                 return {"status": "error", "error": "image_path 是必填参数"}
 
-            # ============ 3. 修改：严格校验路径，报绝对路径错误 ============
             abs_image_path = Path(image_path).absolute()
             if not os.path.exists(abs_image_path):
                 return {"status": "error", "error": f"输入图片不存在: {abs_image_path}。请检查路径是否正确！"}
@@ -572,7 +565,6 @@ class ChangeClothes:
             if output_path is None:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"{Path(abs_image_path).stem}_{timestamp}_changed.png"
-                # ============ 4. 修改：使用本技能的 output 目录 ============
                 output_path = str(self.default_output_dir / filename)
 
             os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
