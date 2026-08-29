@@ -66,7 +66,15 @@ class ControlNetImg2Img:
                 torch_dtype=torch.float32,
                 safety_checker=None,
             ).to("cpu") 
-        
+
+        # ✅ 新增：CPU 特供优化 - 强制开启切片，大幅降低内存占用并加速推理！
+        try:
+            self.pipe.enable_attention_slicing()  # 切分注意力计算，降低峰值内存并加速
+            self.pipe.enable_vae_slicing()        # 切分 VAE 解码，加速出图
+            self.logger.info("✅ 已启用 CPU 注意力切片和 VAE 切片优化")
+        except Exception as e:
+            self.logger.warning(f"⚠️ 启用切片优化失败（不影响使用）: {e}")
+            
         return self.pipe
 
     def _preprocess(self, image: Image.Image, preprocessor_type: str = "HED") -> Image.Image:
