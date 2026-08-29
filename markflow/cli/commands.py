@@ -265,7 +265,6 @@ def build_skill(args, executor, console):
         traceback.print_exc()
         sys.exit(1)
 
-
 def execute_skill(skill_name, **kwargs):
     """执行技能"""
     import importlib
@@ -315,7 +314,20 @@ def execute_skill(skill_name, **kwargs):
         
         if hasattr(skill, 'execute'):
             result = skill.execute(**parsed_kwargs)
-            print(f"✅ 执行成功")
+            
+            # ==================== 修复此处 ====================
+            # 严格检查返回结果，不再无脑打印成功！
+            if isinstance(result, dict):
+                if result.get('status') == 'success':
+                    print(f"✅ 执行成功")
+                else:
+                    print(f"❌ 执行失败: {result.get('error', '未知错误')}")
+            elif result is False:
+                print(f"❌ 执行失败: 返回值为 False")
+            else:
+                print(f"✅ 执行成功")
+            # ==================== 修复结束 ====================
+            
             return result
         else:
             print(f"❌ 技能 {skill_name} 没有 execute 方法")
