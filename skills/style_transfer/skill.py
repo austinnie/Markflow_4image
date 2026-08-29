@@ -1,7 +1,7 @@
 # skills/style_transfer/skill.py
 """
 风格转换 Skill - 将图片转换为指定风格（油画/水彩/动漫/素描等）
-使用 Canny ControlNet 保持构图
+复用通用 ControlNet 引擎（HED + Lineart 锁死构图，高幅度重构画面质感）
 """
 
 import os
@@ -22,18 +22,18 @@ if str(project_root) not in sys.path:
 try:
     import torch
     from PIL import Image
-    from diffusers import StableDiffusionInpaintPipeline
     DIFFUSERS_AVAILABLE = True
 except ImportError:
     DIFFUSERS_AVAILABLE = False
-    logger.warning("diffusers 未安装")
+    logger.warning("torch 或 PIL 未安装")
 
+# ==================== 引入通用引擎（方案1） ====================
 try:
-    from skills.controlnet.skill import Controlnet
-    CONTROLNET_AVAILABLE = True
-except ImportError:
-    CONTROLNET_AVAILABLE = False
-    logger.warning("ControlNet 技能不可用")
+    from skills.controlnet_img2img.skill import ControlNetImg2Img
+    CONTROLNET_ENGINE_AVAILABLE = True
+except ImportError as e:
+    CONTROLNET_ENGINE_AVAILABLE = False
+    logger.warning(f"通用 ControlNet 引擎不可用: {e}")
 
 # 风格预设
 STYLE_PRESETS = {
@@ -73,36 +73,35 @@ STYLE_PRESETS = {
 
 
 class StyleTransfer:
-    """风格转换技能"""
+    """风格转换技能 v2.0"""
 
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.name = "style_transfer"
-        self.version = "1.0.0"
+        self.version = "2.0.0"
 
         self.skill_dir = Path(__file__).parent.absolute()
         self.project_root = self.skill_dir.parent.parent.parent
+        # ==================== 强制本技能输出目录 ====================
         self.output_dir = self.skill_dir / "output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.models_dir = Path(self.config.get('models_dir', self.project_root / 'models'))
         self.device = self.config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.pipeline = None
-        self.current_model = None
-        self.controlnet_skill = None
-
-        if CONTROLNET_AVAILABLE:
+        # ==================== 初始化底层引擎 ====================
+        self.controlnet_engine = None
+        if CONTROLNET_ENGINE_AVAILABLE:
             try:
-                self.controlnet_skill = Controlnet(config={'device': self.device, 'max_size': 512})
-                logger.info("  ControlNet 技能初始化成功")
+                self.controlnet_engine = ControlNetImg2Img(config={'device': self.device})
+                logger.info("  ✅ 底层 ControlNet 引擎初始化成功")
             except Exception as e:
-                logger.warning(f"  ControlNet 技能初始化失败: {e}")
+                logger.warning(f"  底层引擎初始化失败: {e}")
 
         self._setup_logging()
         self._setup_config()
 
-        logger.info(f"StyleTransfer 初始化完成")
+        logger.info(f"StyleTransfer v{self.version} 初始化完成")
         logger.info(f"  设备: {self.device}")
         logger.info(f"  预设风格: {len(STYLE_PRESETS)} 种")
 
@@ -113,90 +112,16 @@ class StyleTransfer:
 
     def _setup_config(self):
         defaults = {
-            'default_model': 'zenityXmix.inpainting.safetensors',
             'default_steps': 30,
-            'default_strength': 0.75,
+            'default_strength': 0.75,  # 风格转换需要高强度重绘来释放质感
             'default_style': 'oil_painting',
         }
         for key, value in defaults.items():
             if key not in self.config:
                 self.config[key] = value
-        Path(self.config.get('output_dir', str(self.output_dir))).mkdir(parents=True, exist_ok=True)
 
-    def _find_model(self, model_name: str) -> Optional[Path]:
-        if not model_name:
-            model_name = self.config.get('default_model', 'zenityXmix.inpainting.safetensors')
-        # ... (同其他 skill 的查找逻辑)
-        return None  # 简化，实际使用时补全
-
-    def _load_pipeline(self, model_path: Path) -> bool:
-        try:
-            self.pipeline = StableDiffusionInpaintPipeline.from_single_file(
-                str(model_path),
-                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
-                safety_checker=None,
-                requires_safety_checker=False,
-            )
-            self.pipeline.to(self.device)
-            self.pipeline.enable_attention_slicing()
-            self.current_model = model_path.name
-            return True
-        except Exception as e:
-            logger.error(f"  模型加载失败: {e}")
-            return False
-
-    def _load_model(self, model_name: str) -> bool:
-        # 简化实现
-        return True
-
-    def _generate_edge_image(self, image: Image.Image) -> Optional[Image.Image]:
-        """使用 ControlNet 生成边缘图"""
-        if self.controlnet_skill is None:
-            return None
-        try:
-            result = self.controlnet_skill.execute(
-                action='detect_pose',
-                image=image,
-                controlnet_type='canny',
-                output_path=None
-            )
-            if result['status'] == 'success':
-                output_path = result['output_path']
-                if os.path.exists(output_path):
-                    return Image.open(output_path)
-            return None
-        except Exception as e:
-            logger.warning(f"  边缘图生成失败: {e}")
-            return None
-
-    def _generate_control_image(self, image: Image.Image, controlnet_type: str) -> Optional[Image.Image]:
-        """生成 ControlNet 控制图"""
-        if self.controlnet_skill is None:
-            return None
-        try:
-            result = self.controlnet_skill.execute(
-                action='detect_pose',
-                image=image,
-                controlnet_type=controlnet_type,
-                output_path=None
-            )
-            if result['status'] == 'success':
-                output_path = result['output_path']
-                if os.path.exists(output_path):
-                    return Image.open(output_path)
-            return None
-        except Exception as e:
-            logger.warning(f"  控制图生成失败: {e}")
-            return None
-
-    def _resize_image(self, image: Image.Image) -> tuple:
-        w, h = image.size
-        max_size = 768
-        if max(w, h) > max_size:
-            ratio = max_size / max(w, h)
-            new_w, new_h = int(w * ratio), int(h * ratio)
-            image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        return image, image.size
+    def list_styles(self) -> Dict[str, Any]:
+        return {"status": "success", "styles": list(STYLE_PRESETS.keys())}
 
     def execute(self, **kwargs) -> Dict[str, Any]:
         """执行风格转换"""
@@ -204,9 +129,14 @@ class StyleTransfer:
         logger.info(f"执行技能: {self.name}")
 
         try:
+            # ==================== 严格路径校验 ====================
             image_path = kwargs.get('image_path')
-            if not image_path or not os.path.exists(image_path):
-                return {"status": "error", "error": f"图片不存在: {image_path}"}
+            if not image_path:
+                return {"status": "error", "error": "image_path 是必填参数"}
+            
+            abs_image_path = Path(image_path).absolute()
+            if not os.path.exists(abs_image_path):
+                return {"status": "error", "error": f"输入图片不存在: {abs_image_path}。请检查路径是否正确！"}
 
             style = kwargs.get('style', self.config.get('default_style', 'oil_painting'))
             if style not in STYLE_PRESETS:
@@ -220,61 +150,52 @@ class StyleTransfer:
             steps = kwargs.get('steps', self.config.get('default_steps', 30))
             seed = kwargs.get('seed', -1)
 
-            image = Image.open(image_path).convert("RGB")
-            image, original_size = self._resize_image(image)
+            # ==================== 直接调用底层引擎 ====================
+            if self.controlnet_engine is None:
+                return {"status": "error", "error": "底层 ControlNet 引擎不可用"}
+
+            # 默认输出到本技能目录
+            output_path = kwargs.get('output_path')
+            if output_path is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_path = str(self.output_dir / f"{Path(abs_image_path).stem}_{style}_{timestamp}.png")
 
             logger.info(f"风格: {style}")
             logger.info(f"提示词: {prompt[:80]}...")
 
-            # 生成 ControlNet 控制图
-            control_image = self._generate_control_image(image, 'canny')
+            # 使用 HED 提取软边缘，配合 Lineart 模型锁死构图
+            result = self.controlnet_engine.execute(
+                input_image_path=str(abs_image_path),
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                preprocessor_type="HED",
+                controlnet_model="lineart",
+                strength=strength,
+                steps=steps,
+                output_path=output_path
+            )
 
-            if seed == -1:
-                seed = random.randint(0, 2**32 - 1)
-            generator = torch.Generator(device=self.device).manual_seed(seed)
-
-            # 执行 Inpaint
-            current_size = image.size
-            pipeline_kwargs = {
-                'prompt': prompt,
-                'negative_prompt': negative_prompt if negative_prompt else None,
-                'image': image,
-                'mask_image': Image.new("L", current_size, 0),  # 全白遮罩 = 全部重绘
-                'strength': strength,
-                'num_inference_steps': steps,
-                'guidance_scale': 7.5,
-                'generator': generator,
-                'width': current_size[0],
-                'height': current_size[1],
-            }
-            if control_image is not None:
-                pipeline_kwargs['control_image'] = control_image
-
-            result = self.pipeline(**pipeline_kwargs).images[0]
-
-            if kwargs.get('output_path'):
-                output_path = kwargs['output_path']
-            else:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_path = str(self.output_dir / f"{Path(image_path).stem}_{style}_{timestamp}.png")
-
-            os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-            result.save(output_path)
+            if result['status'] != 'success':
+                return result
 
             return {
                 "status": "success",
-                "output_path": output_path,
+                "output_path": result.get('image_path', output_path),
                 "style": style,
                 "generation_time": f"{time.time() - start_time:.2f}s",
-                "parameters": {"strength": strength, "steps": steps, "seed": seed}
+                "parameters": {
+                    "strength": strength, 
+                    "steps": steps, 
+                    "seed": seed,
+                    "controlnet": "lineart"
+                }
             }
 
         except Exception as e:
             logger.error(f"执行失败: {e}")
+            import traceback
+            traceback.print_exc()
             return {"status": "error", "error": str(e)}
-
-    def list_styles(self) -> Dict[str, Any]:
-        return {"status": "success", "styles": list(STYLE_PRESETS.keys())}
 
     def __repr__(self):
         return f"<StyleTransfer(name={self.name}, version={self.version})>"
@@ -282,7 +203,7 @@ class StyleTransfer:
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="风格转换工具")
+    parser = argparse.ArgumentParser(description="风格转换工具 v2.0")
     parser.add_argument("--input", "-i", required=True, help="输入图片路径")
     parser.add_argument("--output", "-o", help="输出路径")
     parser.add_argument("--style", "-s", default="oil_painting",
