@@ -26,20 +26,20 @@ try:
     import numpy as np
     from PIL import Image, ImageDraw, ImageFilter
     import cv2
-    from diffusers import StableDiffusionInpaintPipeline, ControlNetModel
+    from diffusers import StableDiffusionInpaintPipeline
     DIFFUSERS_AVAILABLE = True
 except ImportError as e:
     DIFFUSERS_AVAILABLE = False
     logger.warning(f"依赖未安装: {e}")
 
-# ControlNet 技能
+# 引入我们刚写完的 controlnet_img2img 底层技能作为保形引擎
 try:
-    from skills.controlnet.skill import Controlnet
-    CONTROLNET_SKILL_AVAILABLE = True
-    logger.info("ControlNet 技能加载成功")
+    from skills.controlnet_img2img.skill import ControlNetImg2Img
+    CONTROLNET_ENGINE_AVAILABLE = True
+    logger.info("通用 ControlNet 引擎加载成功")
 except ImportError as e:
-    CONTROLNET_SKILL_AVAILABLE = False
-    logger.warning(f"ControlNet 技能不可用: {e}")
+    CONTROLNET_ENGINE_AVAILABLE = False
+    logger.warning(f"通用 ControlNet 引擎不可用: {e}")
 
 # YOLO
 try:
@@ -56,49 +56,40 @@ class ChangeClothes:
     换衣服技能 - 将人物衣服替换为指定款式
     """
 
-    # 支持的图片格式
     SUPPORTED_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
 
     def __init__(self, config: Dict[str, Any] = None):
-        """
-        初始化技能
-
-        Args:
-            config: 配置字典
-        """
         self.config = config or {}
         self.name = "change_clothes"
         self.version = "1.0.0"
 
-        # 目录
+        # ============ 1. 修改：强制设置本技能输出目录 ============
         self.skill_dir = Path(__file__).parent.absolute()
         self.project_root = self.skill_dir.parent.parent.parent
-
-        # 模型配置
         self.models_dir = Path(self.config.get('models_dir', self.project_root / 'models'))
+        
+        # 强制将默认输出目录设定为本技能的 output 文件夹
+        self.default_output_dir = self.skill_dir / "output"
+        self.default_output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 设备
         self.device = self.config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
 
-        # 尺寸配置
         self.auto_resize = self.config.get('auto_resize', True)
         self.min_size = self.config.get('min_size', 512)
         self.max_size = self.config.get('max_size', 1024)
 
-        # 运行时状态
         self.pipeline = None
         self.current_model = None
         self._yolo_model = None
-        self._openpose = None
-
-        # ControlNet 技能
-        self.controlnet_skill = None
-        if self.config.get('use_controlnet', True) and CONTROLNET_SKILL_AVAILABLE:
+        
+        # ControlNet 底层引擎（方案1）
+        self.controlnet_engine = None
+        if self.config.get('use_controlnet', True) and CONTROLNET_ENGINE_AVAILABLE:
             try:
-                self.controlnet_skill = Controlnet(config={'device': self.device, 'max_size': 512})
-                logger.info("  ControlNet 技能初始化成功")
+                self.controlnet_engine = ControlNetImg2Img(config={'device': self.device})
+                logger.info("  ✅ 通用保形引擎 (controlnet_img2img) 初始化成功")
             except Exception as e:
-                logger.warning(f"  ControlNet 技能初始化失败: {e}")
+                logger.warning(f"  ❌ 通用保形引擎初始化失败: {e}")
 
         self._setup_logging()
         self._setup_config()
@@ -106,10 +97,8 @@ class ChangeClothes:
         logger.info(f"ChangeClothes 初始化完成")
         logger.info(f"  模型目录: {self.models_dir}")
         logger.info(f"  设备: {self.device}")
-        logger.info(f"  ControlNet: {'✅ 可用' if self.controlnet_skill else '❌ 不可用'}")
+        logger.info(f"  ControlNet: {'✅ 可用' if self.controlnet_engine else '❌ 不可用'}")
         logger.info(f"  YOLO: {'✅ 可用' if YOLO_AVAILABLE else '❌ 不可用'}")
-
-    # ==================== 初始化方法 ====================
 
     def _setup_logging(self):
         log_level = self.config.get('log_level', 'INFO')
@@ -120,7 +109,8 @@ class ChangeClothes:
 
     def _setup_config(self):
         defaults = {
-            'output_dir': str(self.skill_dir / 'output'),
+            # ============ 2. 修改：defaults 中指向本技能 output ============
+            'output_dir': str(self.default_output_dir),
             'default_model': 'zenityXmix.inpainting.safetensors',
             'default_steps': 25,
             'default_strength': 0.6,
@@ -136,86 +126,50 @@ class ChangeClothes:
         Path(self.config['output_dir']).mkdir(parents=True, exist_ok=True)
 
     # ==================== 模型管理 ====================
-
     def _find_model(self, model_name: str) -> Optional[Path]:
-        """查找模型文件"""
         if not model_name:
             model_name = self.config.get('default_model', 'zenityXmix.inpainting.safetensors')
 
-        logger.info(f"查找模型: '{model_name}'")
-        logger.info(f"模型目录: {self.models_dir}")
-
-        # 1. 直接查找
         direct_path = self.models_dir / model_name
         if direct_path.exists():
-            logger.info(f"  找到: {direct_path}")
             return direct_path
 
-        # 2. 提取文件名
         filename = os.path.basename(model_name)
-
-        # 3. 在子目录中查找
         subdirs = ['sd-v1-5', 'sdxl']
         for subdir in subdirs:
             sub_path = self.models_dir / subdir / filename
             if sub_path.exists():
-                logger.info(f"  找到: {sub_path}")
                 return sub_path
 
-        # 4. 遍历所有子目录
         for subdir in self.models_dir.iterdir():
             if subdir.is_dir():
                 file_path = subdir / filename
                 if file_path.exists():
-                    logger.info(f"  找到: {file_path}")
                     return file_path
 
         logger.error(f"未找到模型: '{model_name}'")
         return None
 
-    def _load_controlnet(self) -> Optional[ControlNetModel]:
-        """加载 ControlNet 模型"""
-        try:
-            logger.info("  加载 ControlNet (OpenPose)...")
-            controlnet = ControlNetModel.from_pretrained(
-                "lllyasviel/control_v11p_sd15_openpose",
-                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
-            )
-            from controlnet_aux import OpenPoseDetector
-            self._openpose = OpenPoseDetector.from_pretrained("lllyasviel/Annotators")
-            logger.info("  ControlNet 加载成功")
-            return controlnet
-        except Exception as e:
-            logger.warning(f"  ControlNet 加载失败: {e}")
-            return None
-
     def _load_pipeline(self, model_path: Path, use_controlnet: bool = True) -> bool:
-        """加载 SD Pipeline"""
+        """加载 SD Inpaint Pipeline（真正的局部重绘底座）"""
         try:
-            controlnet = None
-            if use_controlnet:
-                controlnet = self._load_controlnet()
-
             self.pipeline = StableDiffusionInpaintPipeline.from_single_file(
                 str(model_path),
                 torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
                 safety_checker=None,
                 requires_safety_checker=False,
-                controlnet=controlnet,
             )
             self.pipeline.to(self.device)
             self.pipeline.enable_attention_slicing()
-
             self.current_model = model_path.name
-            logger.info(f"  模型加载成功: {self.current_model}")
+            logger.info(f"  ✅ Inpaint 模型加载成功: {self.current_model}")
             return True
 
         except Exception as e:
-            logger.error(f"  模型加载失败: {e}")
+            logger.error(f"  ❌ Inpaint 模型加载失败: {e}")
             return False
 
     def _load_model(self, model_name: str) -> bool:
-        """加载模型（通过名称）"""
         if not DIFFUSERS_AVAILABLE:
             logger.error("diffusers 未安装")
             return False
@@ -225,14 +179,9 @@ class ChangeClothes:
             logger.error(f"模型文件不存在: {model_name}")
             return False
 
-        logger.info(f"加载模型: {model_path}")
-        return self._load_pipeline(
-            model_path,
-            use_controlnet=self.config.get('use_controlnet', True)
-        )
+        return self._load_pipeline(model_path)
 
     def _load_model_from_path(self, model_path: str) -> bool:
-        """加载模型（通过路径）"""
         if not DIFFUSERS_AVAILABLE:
             logger.error("diffusers 未安装")
             return False
@@ -241,32 +190,22 @@ class ChangeClothes:
             logger.error(f"模型不存在: {model_path}")
             return False
 
-        logger.info(f"从路径加载模型: {model_path}")
-        return self._load_pipeline(
-            Path(model_path),
-            use_controlnet=self.config.get('use_controlnet', True)
-        )
+        return self._load_pipeline(Path(model_path))
 
     # ==================== 遮罩生成 ====================
-
     def _get_yolo_model(self):
-        """获取 YOLO 模型（懒加载）"""
         if not YOLO_AVAILABLE:
             return None
-
         if self._yolo_model is None:
             try:
                 self._yolo_model = YOLO("yolov8n-seg.pt")
-                logger.info("  YOLO 加载成功")
             except Exception as e:
                 logger.warning(f"  YOLO 加载失败: {e}")
                 self._yolo_model = False
         return self._yolo_model
 
     def _generate_mask_auto(self, image: Image.Image) -> Optional[Image.Image]:
-        """自动生成遮罩（使用 YOLO）"""
         h, w = image.size[1], image.size[0]
-
         yolo = self._get_yolo_model()
         if not yolo:
             return None
@@ -288,8 +227,6 @@ class ChangeClothes:
 
             y_min, y_max = coords[0].min(), coords[0].max()
             body_h = y_max - y_min
-
-            # 衣服区域：脖子到臀部下方（覆盖衣服区域）
             neck = y_min + int(body_h * 0.18)
             hip = y_min + int(body_h * 0.70)
 
@@ -301,7 +238,6 @@ class ChangeClothes:
             clothes = np.zeros_like(combined)
             clothes[neck:hip, left:right] = combined[neck:hip, left:right]
 
-            # 平滑边缘
             kernel = np.ones((5, 5), np.uint8)
             clothes = cv2.dilate(clothes, kernel, iterations=1)
             clothes = cv2.GaussianBlur(clothes, (9, 9), 0)
@@ -316,9 +252,6 @@ class ChangeClothes:
             return None
 
     def _generate_mask_manual(self, image: Image.Image) -> Image.Image:
-        """手动绘制遮罩（鼠标交互）"""
-        import cv2
-
         img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
         h, w = img_cv.shape[:2]
 
@@ -359,12 +292,10 @@ class ChangeClothes:
         while True:
             display = img_cv.copy()
             mask_overlay = cv2.addWeighted(display, 0.5, overlay, 0.5, 0)
-
             cv2.putText(mask_overlay, f"Brush: {brush_size}", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             cv2.putText(mask_overlay, "Draw clothes, press Q to finish", (10, 60),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
-
             cv2.imshow('Draw Mask - Change Clothes', mask_overlay)
             key = cv2.waitKey(1) & 0xFF
 
@@ -388,60 +319,45 @@ class ChangeClothes:
         return Image.fromarray(mask, mode="L")
 
     def _generate_mask(self, image: Image.Image, use_manual: bool = False) -> Image.Image:
-        """生成衣服遮罩"""
         if use_manual:
             return self._generate_mask_manual(image)
 
         mask = self._generate_mask_auto(image)
         if mask is not None:
-            logger.info("  使用 YOLO 自动遮罩")
+            logger.info("  ✅ 使用 YOLO 自动遮罩")
             return mask
 
-        logger.info("  自动遮罩失败，切换到手动绘制")
+        logger.info("  ⚠️ 自动遮罩失败，切换到手动绘制")
         return self._generate_mask_manual(image)
 
-    # ==================== ControlNet 集成 ====================
-
+    # ==================== ControlNet 引擎集成 ====================
     def _generate_pose_image(self, image: Image.Image, controlnet_type: str = "openpose") -> Optional[Image.Image]:
-        """使用 ControlNet 技能生成姿态图"""
-        if self.controlnet_skill is None:
+        """使用 controlnet_img2img 底层引擎预处理（提取骨骼/线稿），不涉及模型加载"""
+        if self.controlnet_engine is None:
             return None
 
         try:
-            logger.info(f"  调用 ControlNet 技能 ({controlnet_type})...")
-            result = self.controlnet_skill.execute(
-                action='detect_pose',
-                image=image,
-                controlnet_type=controlnet_type,
-                output_path=None
-            )
-
-            if result['status'] == 'success':
-                output_path = result['output_path']
-                if os.path.exists(output_path):
-                    pose_image = Image.open(output_path)
-                    logger.info(f"  姿态图生成完成: {output_path}")
-                    return pose_image
-                else:
-                    logger.warning(f"  姿态图文件不存在: {output_path}")
-                    return None
+            logger.info(f"  ✅ 提取控制特征 ({controlnet_type})...")
+            # 核心调用：继承底层引擎的预处理能力
+            control_image = self.controlnet_engine._preprocess(image, preprocessor_type=controlnet_type.upper())
+            
+            if control_image is not None:
+                logger.info("  ✅ 控制特征提取完成")
+                return control_image
             else:
-                logger.warning(f"  ControlNet 检测失败: {result.get('error', '未知错误')}")
+                logger.warning("  ⚠️ 控制特征提取失败，继续使用普通 Inpaint")
                 return None
 
         except Exception as e:
-            logger.warning(f"  姿态图生成失败: {e}")
+            logger.warning(f"  ⚠️ 控制特征提取异常: {e}")
             return None
 
     # ==================== 图片预处理 ====================
-
     def _resize_image(self, image: Image.Image) -> tuple:
-        """等比例缩放图片到合适尺寸"""
         if not self.auto_resize:
             return image, image.size
 
         original_size = image.size
-
         need_resize = False
         new_size = original_size
 
@@ -459,7 +375,6 @@ class ChangeClothes:
             image = image.resize(new_size, Image.Resampling.LANCZOS)
             original_size = new_size
 
-        # 确保是 8 的倍数（SD 要求）
         width = (original_size[0] // 8) * 8
         height = (original_size[1] // 8) * 8
 
@@ -475,24 +390,7 @@ class ChangeClothes:
         return image, original_size
 
     # ==================== 批量处理 ====================
-
-    def batch_process(
-        self,
-        input_dir: str,
-        output_dir: Optional[str] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        批量处理目录下的所有图片
-
-        Args:
-            input_dir: 输入目录
-            output_dir: 输出目录
-            **kwargs: 同 execute 参数
-
-        Returns:
-            批量处理结果
-        """
+    def batch_process(self, input_dir: str, output_dir: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         input_path = Path(input_dir)
         if not input_path.exists():
             return {"status": "error", "error": f"目录不存在: {input_dir}"}
@@ -502,7 +400,6 @@ class ChangeClothes:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # 收集图片
         images = []
         for ext in self.SUPPORTED_EXTENSIONS:
             images.extend(input_path.glob(f"*{ext}"))
@@ -523,11 +420,7 @@ class ChangeClothes:
             output_file = output_path / img_path.name
 
             try:
-                result = self.execute(
-                    image_path=str(img_path),
-                    output_path=str(output_file),
-                    **kwargs
-                )
+                result = self.execute(image_path=str(img_path), output_path=str(output_file), **kwargs)
                 if result['status'] == 'success':
                     success_count += 1
                 else:
@@ -547,30 +440,7 @@ class ChangeClothes:
         }
 
     # ==================== 主执行方法 ====================
-
     def execute(self, **kwargs) -> Dict[str, Any]:
-        """
-        执行换衣服
-
-        Args:
-            image_path: 输入图片路径 (必填)
-            output_path: 输出图片路径 (可选)
-            model_name: 模型名称 (可选)
-            model_path: 模型路径 (可选)
-            prompt: 生成提示词 - 描述想要的服装 (可选)
-            negative_prompt: 负面提示词 (可选)
-            strength: 重绘强度 (可选)
-            steps: 迭代步数 (可选)
-            seed: 随机种子 (可选)
-            output_dir: 输出目录 (可选)
-            save_mask: 是否保存遮罩 (可选)
-            manual_mask: 是否手动绘制遮罩 (可选)
-            controlnet_type: ControlNet 类型 (可选)
-            use_controlnet: 是否使用 ControlNet (可选)
-
-        Returns:
-            执行结果
-        """
         start_time = time.time()
         logger.info(f"执行技能: {self.name} (v{self.version})")
 
@@ -580,8 +450,10 @@ class ChangeClothes:
             if not image_path:
                 return {"status": "error", "error": "image_path 是必填参数"}
 
-            if not os.path.exists(image_path):
-                return {"status": "error", "error": f"图片不存在: {image_path}"}
+            # ============ 3. 修改：严格校验路径，报绝对路径错误 ============
+            abs_image_path = Path(image_path).absolute()
+            if not os.path.exists(abs_image_path):
+                return {"status": "error", "error": f"输入图片不存在: {abs_image_path}。请检查路径是否正确！"}
 
             output_path = kwargs.get('output_path')
             model_path = kwargs.get('model_path')
@@ -590,7 +462,7 @@ class ChangeClothes:
             controlnet_type = kwargs.get('controlnet_type', self.config.get('default_controlnet_type', 'openpose'))
             use_controlnet = kwargs.get('use_controlnet', self.config.get('use_controlnet', True))
 
-            # 2. 加载模型
+            # 2. 加载 Inpaint 模型（备用路线）
             if model_path:
                 if not self._load_model_from_path(model_path):
                     return {"status": "error", "error": f"无法加载模型: {model_path}"}
@@ -601,14 +473,8 @@ class ChangeClothes:
                         return {"status": "error", "error": f"无法加载模型: {model_name}"}
 
             # 3. 获取生成参数
-            prompt = kwargs.get('prompt')
-            if prompt is None:
-                prompt = self.config.get('default_prompt')
-
-            negative_prompt = kwargs.get('negative_prompt')
-            if negative_prompt is None:
-                negative_prompt = self.config.get('default_negative')
-
+            prompt = kwargs.get('prompt') if kwargs.get('prompt') is not None else self.config.get('default_prompt')
+            negative_prompt = kwargs.get('negative_prompt') if kwargs.get('negative_prompt') is not None else self.config.get('default_negative')
             strength = kwargs.get('strength', self.config.get('default_strength', 0.6))
             steps = kwargs.get('steps', self.config.get('default_steps', 25))
             seed = kwargs.get('seed', -1)
@@ -616,10 +482,10 @@ class ChangeClothes:
             save_mask = kwargs.get('save_mask', False)
 
             # 4. 加载并缩放图片
-            image = Image.open(image_path).convert("RGB")
+            image = Image.open(abs_image_path).convert("RGB")
             image, original_size = self._resize_image(image)
 
-            logger.info(f"处理: {os.path.basename(image_path)} ({image.size[0]}x{image.size[1]})")
+            logger.info(f"处理: {os.path.basename(abs_image_path)} ({image.size[0]}x{image.size[1]})")
             logger.info(f"服装描述: {prompt[:80]}...")
 
             # 5. 生成遮罩
@@ -627,13 +493,13 @@ class ChangeClothes:
             mask = self._generate_mask(image, use_manual=manual_mask)
 
             if save_mask:
-                mask_path = image_path.replace('.png', '_mask.png').replace('.jpg', '_mask.png')
+                mask_path = str(abs_image_path).replace('.png', '_mask.png').replace('.jpg', '_mask.png')
                 mask.save(mask_path)
                 logger.info(f"  遮罩: {os.path.basename(mask_path)}")
 
             # 6. 生成姿态图（ControlNet）
             control_image = None
-            if use_controlnet and self.controlnet_skill is not None:
+            if use_controlnet and self.controlnet_engine is not None:
                 logger.info(f"生成姿态图 (controlnet_type={controlnet_type})...")
                 control_image = self._generate_pose_image(image, controlnet_type)
                 if control_image is not None:
@@ -646,7 +512,7 @@ class ChangeClothes:
                 seed = random.randint(0, 2 ** 32 - 1)
             generator = torch.Generator(device=self.device).manual_seed(seed)
 
-            logger.info("SD Inpaint 生成中...")
+            logger.info("SD 生成中...")
             logger.info(f"  提示词: {prompt[:50]}...")
             logger.info(f"  步数: {steps}")
             logger.info(f"  强度: {strength}")
@@ -654,33 +520,60 @@ class ChangeClothes:
             if control_image is not None:
                 logger.info("  ControlNet: 已启用")
 
-            # 8. 执行 Inpaint
-            current_size = image.size
-            pipeline_kwargs = {
-                'prompt': prompt,
-                'negative_prompt': negative_prompt if negative_prompt else None,
-                'image': image,
-                'mask_image': mask,
-                'strength': strength,
-                'num_inference_steps': steps,
-                'guidance_scale': 7.5,
-                'generator': generator,
-                'width': current_size[0],
-                'height': current_size[1],
-            }
-
+            # 8. 执行生成
             if control_image is not None:
-                pipeline_kwargs['control_image'] = control_image
-
-            result = self.pipeline(**pipeline_kwargs).images[0]
+                # 走方案1：调用通用的 ControlNet 图生图引擎（百分百保形）
+                logger.info("  🔥 使用 ControlNet 图生图引擎进行保形重绘...")
+                
+                # 创建一个临时保存路径（写入本技能目录）
+                tmp_output = str(self.default_output_dir / f"_tmp_{int(time.time())}.png")
+                
+                result = self.controlnet_engine.execute(
+                    input_image_path=str(abs_image_path),  # 必须传绝对路径
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
+                    preprocessor_type=controlnet_type.upper(),
+                    controlnet_model="openpose",          # 直接锁定 openpose 底层模型
+                    strength=0.65,                        # 保形重绘幅度
+                    output_path=tmp_output
+                )
+                
+                if result['status'] == 'success':
+                    result = Image.open(result.get('image_path', tmp_output))
+                else:
+                    logger.warning(f"  引擎调用失败: {result.get('error')}，回退到原 Inpaint")
+                    pipeline_kwargs = {
+                        'prompt': prompt,
+                        'negative_prompt': negative_prompt,
+                        'image': image,
+                        'mask_image': mask,
+                        'strength': strength,
+                        'num_inference_steps': steps,
+                        'guidance_scale': 7.5,
+                        'generator': generator,
+                    }
+                    result = self.pipeline(**pipeline_kwargs).images[0]
+            else:
+                # 如果没有可用的控制特征，走原有的局部重绘逻辑
+                logger.info("  使用局部重绘（Inpaint）进行重绘...")
+                pipeline_kwargs = {
+                    'prompt': prompt,
+                    'negative_prompt': negative_prompt,
+                    'image': image,
+                    'mask_image': mask,
+                    'strength': strength,
+                    'num_inference_steps': steps,
+                    'guidance_scale': 7.5,
+                    'generator': generator,
+                }
+                result = self.pipeline(**pipeline_kwargs).images[0]
 
             # 9. 保存结果
             if output_path is None:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_dir_path = Path(output_dir)
-                output_dir_path.mkdir(parents=True, exist_ok=True)
-                filename = f"{Path(image_path).stem}_{timestamp}_changed.png"
-                output_path = str(output_dir_path / filename)
+                filename = f"{Path(abs_image_path).stem}_{timestamp}_changed.png"
+                # ============ 4. 修改：使用本技能的 output 目录 ============
+                output_path = str(self.default_output_dir / filename)
 
             os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
             result.save(output_path)
@@ -692,7 +585,7 @@ class ChangeClothes:
                 "status": "success",
                 "output_path": output_path,
                 "parameters": {
-                    "image_path": image_path,
+                    "image_path": str(abs_image_path),
                     "model": self.current_model,
                     "prompt": prompt,
                     "negative_prompt": negative_prompt,
