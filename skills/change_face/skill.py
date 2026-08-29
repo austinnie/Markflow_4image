@@ -1,7 +1,7 @@
 # skills/change_face/skill.py
 """
-换脸/表情 Skill - 保持姿态不变，替换面部或改变表情
-使用 OpenPose ControlNet 保持姿态，Inpaint 重绘面部区域
+换脸/表情 Skill - 保持姿态和身份不变，精细改变表情
+复用通用 ControlNet 引擎（HED + Lineart 锁死面部轮廓，精准调表情）
 """
 
 import os
@@ -21,62 +21,51 @@ if str(project_root) not in sys.path:
 
 try:
     import torch
-    import numpy as np
-    from PIL import Image, ImageDraw
-    import cv2
-    from diffusers import StableDiffusionInpaintPipeline
+    from PIL import Image
     DIFFUSERS_AVAILABLE = True
 except ImportError:
     DIFFUSERS_AVAILABLE = False
-    logger.warning("diffusers 未安装")
+    logger.warning("torch 或 PIL 未安装")
 
+# ==================== 引入通用引擎（方案1） ====================
 try:
-    from skills.controlnet.skill import Controlnet
-    CONTROLNET_AVAILABLE = True
-except ImportError:
-    CONTROLNET_AVAILABLE = False
-    logger.warning("ControlNet 技能不可用")
-
-try:
-    from ultralytics import YOLO
-    YOLO_AVAILABLE = True
-except ImportError:
-    YOLO_AVAILABLE = False
-    logger.warning("YOLO 未安装")
+    from skills.controlnet_img2img.skill import ControlNetImg2Img
+    CONTROLNET_ENGINE_AVAILABLE = True
+except ImportError as e:
+    CONTROLNET_ENGINE_AVAILABLE = False
+    logger.warning(f"通用 ControlNet 引擎不可用: {e}")
 
 
 class ChangeFace:
-    """换脸/表情技能"""
+    """换脸/表情技能 v2.0"""
 
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.name = "change_face"
-        self.version = "1.0.0"
+        self.version = "2.0.0"
 
         self.skill_dir = Path(__file__).parent.absolute()
         self.project_root = self.skill_dir.parent.parent.parent
+        # ==================== 强制本技能输出目录 ====================
         self.output_dir = self.skill_dir / "output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.models_dir = Path(self.config.get('models_dir', self.project_root / 'models'))
         self.device = self.config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.pipeline = None
-        self.current_model = None
-        self.controlnet_skill = None
-        self._yolo_model = None
-
-        if CONTROLNET_AVAILABLE:
+        # ==================== 初始化底层引擎 ====================
+        self.controlnet_engine = None
+        if CONTROLNET_ENGINE_AVAILABLE:
             try:
-                self.controlnet_skill = Controlnet(config={'device': self.device, 'max_size': 512})
-                logger.info("  ControlNet 技能初始化成功")
+                self.controlnet_engine = ControlNetImg2Img(config={'device': self.device})
+                logger.info("  ✅ 底层 ControlNet 引擎初始化成功")
             except Exception as e:
-                logger.warning(f"  ControlNet 技能初始化失败: {e}")
+                logger.warning(f"  底层引擎初始化失败: {e}")
 
         self._setup_logging()
         self._setup_config()
 
-        logger.info(f"ChangeFace 初始化完成")
+        logger.info(f"ChangeFace v{self.version} 初始化完成")
         logger.info(f"  设备: {self.device}")
 
     def _setup_logging(self):
@@ -86,136 +75,14 @@ class ChangeFace:
 
     def _setup_config(self):
         defaults = {
-            'default_model': 'zenityXmix.inpainting.safetensors',
             'default_steps': 30,
-            'default_strength': 0.6,
-            'default_prompt': 'beautiful face, detailed facial features, perfect skin, masterpiece, high quality',
+            'default_strength': 0.40,  # 换表情强度不能太高，否则会变成另一个人
+            'default_prompt': 'beautiful face, detailed facial features, perfect skin, natural smile, masterpiece, high quality',
             'default_negative': 'ugly, deformed, bad anatomy, extra limbs, blurry, low quality, clothes',
         }
         for key, value in defaults.items():
             if key not in self.config:
                 self.config[key] = value
-        Path(self.config.get('output_dir', str(self.output_dir))).mkdir(parents=True, exist_ok=True)
-
-    def _find_model(self, model_name: str) -> Optional[Path]:
-        return Path(self.models_dir / "sd-v1-5" / model_name) if model_name else None
-
-    def _load_pipeline(self, model_path: Path) -> bool:
-        try:
-            self.pipeline = StableDiffusionInpaintPipeline.from_single_file(
-                str(model_path),
-                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
-                safety_checker=None,
-                requires_safety_checker=False,
-            )
-            self.pipeline.to(self.device)
-            self.pipeline.enable_attention_slicing()
-            self.current_model = model_path.name
-            return True
-        except Exception as e:
-            logger.error(f"  模型加载失败: {e}")
-            return False
-
-    def _load_model(self, model_name: str) -> bool:
-        model_path = self._find_model(model_name)
-        if not model_path or not model_path.exists():
-            logger.error(f"模型不存在: {model_name}")
-            return False
-        return self._load_pipeline(model_path)
-
-    def _get_yolo_model(self):
-        if not YOLO_AVAILABLE:
-            return None
-        if self._yolo_model is None:
-            try:
-                self._yolo_model = YOLO("yolov8n-seg.pt")
-                logger.info("  YOLO 加载成功")
-            except Exception as e:
-                logger.warning(f"  YOLO 加载失败: {e}")
-                self._yolo_model = False
-        return self._yolo_model
-
-    def _generate_face_mask(self, image: Image.Image) -> Optional[Image.Image]:
-        """生成面部遮罩"""
-        h, w = image.size[1], image.size[0]
-
-        yolo = self._get_yolo_model()
-        if not yolo:
-            return None
-
-        try:
-            results = yolo(image, verbose=False)
-            if len(results) == 0 or results[0].masks is None:
-                return None
-
-            masks = results[0].masks.data.cpu().numpy()
-            combined = np.zeros((h, w), dtype=np.uint8)
-            for m in masks:
-                m_resized = cv2.resize(m, (w, h))
-                combined = np.maximum(combined, (m_resized > 0.5).astype(np.uint8) * 255)
-
-            coords = np.where(combined > 0)
-            if len(coords[0]) == 0:
-                return None
-
-            y_min, y_max = coords[0].min(), coords[0].max()
-            body_h = y_max - y_min
-
-            # 面部区域：头部区域
-            face_top = y_min
-            face_bottom = y_min + int(body_h * 0.30)
-
-            x_min, x_max = coords[1].min(), coords[1].max()
-            body_w = x_max - x_min
-            face_left = x_min + int(body_w * 0.10)
-            face_right = x_max - int(body_w * 0.10)
-
-            face_mask = np.zeros_like(combined)
-            face_mask[face_top:face_bottom, face_left:face_right] = combined[face_top:face_bottom, face_left:face_right]
-
-            # 膨胀和模糊让边缘更自然
-            kernel = np.ones((10, 10), np.uint8)
-            face_mask = cv2.dilate(face_mask, kernel, iterations=1)
-            face_mask = cv2.GaussianBlur(face_mask, (15, 15), 0)
-
-            if np.sum(face_mask > 0) < 100:
-                return None
-
-            logger.info(f"  面部遮罩生成完成")
-            return Image.fromarray(face_mask, mode="L")
-
-        except Exception as e:
-            logger.warning(f"  面部遮罩生成失败: {e}")
-            return None
-
-    def _generate_pose_image(self, image: Image.Image) -> Optional[Image.Image]:
-        """使用 ControlNet 生成姿态图"""
-        if self.controlnet_skill is None:
-            return None
-        try:
-            result = self.controlnet_skill.execute(
-                action='detect_pose',
-                image=image,
-                controlnet_type='openpose',
-                output_path=None
-            )
-            if result['status'] == 'success':
-                output_path = result['output_path']
-                if os.path.exists(output_path):
-                    return Image.open(output_path)
-            return None
-        except Exception as e:
-            logger.warning(f"  姿态图生成失败: {e}")
-            return None
-
-    def _resize_image(self, image: Image.Image) -> tuple:
-        w, h = image.size
-        max_size = 768
-        if max(w, h) > max_size:
-            ratio = max_size / max(w, h)
-            new_w, new_h = int(w * ratio), int(h * ratio)
-            image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        return image, image.size
 
     def execute(self, **kwargs) -> Dict[str, Any]:
         """执行换脸/表情"""
@@ -223,90 +90,78 @@ class ChangeFace:
         logger.info(f"执行技能: {self.name}")
 
         try:
+            # ==================== 严格路径校验 ====================
             image_path = kwargs.get('image_path')
-            if not image_path or not os.path.exists(image_path):
-                return {"status": "error", "error": f"图片不存在: {image_path}"}
+            if not image_path:
+                return {"status": "error", "error": "image_path 是必填参数"}
+            
+            abs_image_path = Path(image_path).absolute()
+            if not os.path.exists(abs_image_path):
+                return {"status": "error", "error": f"输入图片不存在: {abs_image_path}。请检查路径是否正确！"}
 
             prompt = kwargs.get('prompt') or self.config.get('default_prompt')
             negative_prompt = kwargs.get('negative_prompt') or self.config.get('default_negative')
 
-            strength = kwargs.get('strength', self.config.get('default_strength', 0.6))
+            strength = kwargs.get('strength', self.config.get('default_strength', 0.40))
             steps = kwargs.get('steps', self.config.get('default_steps', 30))
             seed = kwargs.get('seed', -1)
-            model_name = kwargs.get('model_name', self.config.get('default_model'))
 
-            if not self._load_model(model_name):
-                return {"status": "error", "error": f"无法加载模型: {model_name}"}
+            # ==================== 直接调用底层引擎 ====================
+            if self.controlnet_engine is None:
+                return {"status": "error", "error": "底层 ControlNet 引擎不可用"}
 
-            image = Image.open(image_path).convert("RGB")
-            image, original_size = self._resize_image(image)
+            # 默认输出到本技能目录
+            output_path = kwargs.get('output_path')
+            if output_path is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_path = str(self.output_dir / f"{Path(abs_image_path).stem}_face_{timestamp}.png")
 
             logger.info(f"提示词: {prompt[:80]}...")
 
-            # 生成面部遮罩
-            face_mask = self._generate_face_mask(image)
-            if face_mask is None:
-                # 降级：使用椭圆遮罩覆盖面部区域
-                h, w = image.size[1], image.size[0]
-                face_mask = Image.new("L", (w, h), 0)
-                draw = ImageDraw.Draw(face_mask)
-                cx, cy = w // 2, h // 3
-                draw.ellipse((cx - w//4, cy - h//4, cx + w//4, cy + h//4), fill=255)
-                face_mask = face_mask.filter(ImageFilter.GaussianBlur(radius=15))
+            # 使用 HED 提取硬边缘，锁死面部轮廓，防止AI变成另一个人
+            result = self.controlnet_engine.execute(
+                input_image_path=str(abs_image_path),
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                preprocessor_type="HED",
+                controlnet_model="lineart",
+                strength=strength,
+                steps=steps,
+                output_path=output_path
+            )
 
-            # 生成姿态图
-            control_image = self._generate_pose_image(image)
-
-            if seed == -1:
-                seed = random.randint(0, 2**32 - 1)
-            generator = torch.Generator(device=self.device).manual_seed(seed)
-
-            current_size = image.size
-            pipeline_kwargs = {
-                'prompt': prompt,
-                'negative_prompt': negative_prompt if negative_prompt else None,
-                'image': image,
-                'mask_image': face_mask,
-                'strength': strength,
-                'num_inference_steps': steps,
-                'guidance_scale': 7.5,
-                'generator': generator,
-                'width': current_size[0],
-                'height': current_size[1],
-            }
-            if control_image is not None:
-                pipeline_kwargs['control_image'] = control_image
-
-            result = self.pipeline(**pipeline_kwargs).images[0]
-
-            if kwargs.get('output_path'):
-                output_path = kwargs['output_path']
-            else:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_path = str(self.output_dir / f"{Path(image_path).stem}_face_{timestamp}.png")
-
-            os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-            result.save(output_path)
+            if result['status'] != 'success':
+                return result
 
             return {
                 "status": "success",
-                "output_path": output_path,
+                "output_path": result.get('image_path', output_path),
                 "generation_time": f"{time.time() - start_time:.2f}s",
-                "parameters": {"strength": strength, "steps": steps, "seed": seed}
+                "parameters": {
+                    "strength": strength, 
+                    "steps": steps, 
+                    "seed": seed,
+                    "controlnet": "lineart"
+                }
             }
 
         except Exception as e:
             logger.error(f"执行失败: {e}")
+            import traceback
+            traceback.print_exc()
             return {"status": "error", "error": str(e)}
+
+    def __repr__(self):
+        return f"<ChangeFace(name={self.name}, version={self.version})>"
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="换脸/表情工具")
+    parser = argparse.ArgumentParser(description="换脸/表情工具 v2.0")
     parser.add_argument("--input", "-i", required=True, help="输入图片路径")
     parser.add_argument("--output", "-o", help="输出路径")
     parser.add_argument("--prompt", "-p", default="beautiful face, smiling, happy expression, masterpiece", help="面部描述")
-    parser.add_argument("--strength", type=float, default=0.6, help="重绘强度")
+    parser.add_argument("--strength", type=float, default=0.40, help="重绘强度")
     parser.add_argument("--steps", type=int, default=30, help="迭代步数")
     parser.add_argument("--seed", type=int, default=-1, help="随机种子")
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
