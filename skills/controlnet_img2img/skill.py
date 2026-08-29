@@ -24,7 +24,7 @@ class ControlNetImg2Img:
         self.pipe = None
         self._setup_logging()
         
-        # ✅ 设定本技能默认输出目录
+        # 设定本技能默认输出目录
         self.skill_dir = Path(__file__).parent.absolute()
         self.default_output_dir = self.skill_dir / "output"
         self.default_output_dir.mkdir(parents=True, exist_ok=True)
@@ -35,7 +35,7 @@ class ControlNetImg2Img:
         self.logger = logging.getLogger(self.name)
 
     def _load_base_pipeline(self, base_model_path, controlnet_key: str = "canny"):
-        """懒加载底模和 ControlNet 模型"""
+        """懒加载底模和 ControlNet 模型（纯 CPU 稳定模式）"""
         from diffusers import StableDiffusionControlNetImg2ImgPipeline, ControlNetModel
         
         if self.pipe is not None:
@@ -67,11 +67,11 @@ class ControlNetImg2Img:
                 safety_checker=None,
             ).to("cpu") 
 
-        # ✅ 新增：CPU 特供优化 - 强制开启切片，大幅降低内存占用并加速推理！
+        # 开启 CPU 优化切片，提速
         try:
-            self.pipe.enable_attention_slicing()  # 切分注意力计算，降低峰值内存并加速
-            self.pipe.enable_vae_slicing()        # 切分 VAE 解码，加速出图
-            self.logger.info("✅ 已启用 CPU 注意力切片和 VAE 切片优化")
+            self.pipe.enable_attention_slicing()
+            self.pipe.enable_vae_slicing()
+            self.logger.info("✅ 已启用 CPU 注意力切片优化")
         except Exception as e:
             self.logger.warning(f"⚠️ 启用切片优化失败（不影响使用）: {e}")
             
@@ -83,10 +83,6 @@ class ControlNetImg2Img:
             if preprocessor_type == "HED":
                 from controlnet_aux import HEDdetector
                 processor = HEDdetector.from_pretrained("lllyasviel/Annotators")
-                return processor(image)
-            elif preprocessor_type == "MLSD":
-                from controlnet_aux import MlsdDetector
-                processor = MlsdDetector.from_pretrained("lllyasviel/Annotators")
                 return processor(image)
             elif preprocessor_type == "OPENPOSE":
                 from controlnet_aux import OpenposeDetector
@@ -100,17 +96,6 @@ class ControlNetImg2Img:
             raise ImportError(f"请先安装 controlnet_aux: pip install controlnet-aux. 错误: {e}")
 
     def execute(self, **kwargs) -> Dict[str, Any]:
-        """
-        执行技能：
-        Args:
-            input_image_path: str, 原图路径
-            prompt: str, 正向提示词
-            negative_prompt: str, 负向提示词
-            preprocessor_type: str, 预处理类型 (HED/Canny/MLSD/Openpose)
-            controlnet_model: str, 底层 ControlNet 模型类型 (canny/lineart/openpose)
-            strength: float, 重绘幅度 (默认 0.7)
-            output_path: str, 输出图像路径
-        """
         input_path = kwargs.get("input_image_path")
         prompt = kwargs.get("prompt", "")
         negative_prompt = kwargs.get("negative_prompt", "")
@@ -119,41 +104,29 @@ class ControlNetImg2Img:
         strength = kwargs.get("strength", 0.7)
         output_path = kwargs.get("output_path", None)
         
-        # ✅ 核心修改1：严格检查输入图片路径
         if not input_path:
             return {"status": "error", "error": "缺少 input_image_path 参数"}
-        
-        # 将相对路径转换为绝对路径
         abs_input_path = Path(input_path).absolute()
         if not abs_input_path.exists():
-            return {
-                "status": "error", 
-                "error": f"输入图片路径不存在: {abs_input_path}。请检查图片是否放对了位置！"
-            }
+            return {"status": "error", "error": f"输入图片路径不存在: {abs_input_path}。请检查图片是否放对了位置！"}
 
-        # ✅ 核心修改2：无默认输出路径时，自动保存在本skill的 output 目录
         if output_path is None:
-            # 使用原图文件名 + 时间戳，防止重名
             timestamp = int(__import__('time').time())
             filename = f"{abs_input_path.stem}_controlnet_{timestamp}.png"
             output_path = str(self.default_output_dir / filename)
 
         try:
-            # 1. 获取基础 SD 模型配置
             sd_config = get_model_config()
             base_model_path = sd_config.get("model_path")
             if not base_model_path:
                 return {"status": "error", "error": "未找到基础底模路径，请检查 model_config.py"}
 
-            # 2. 读取并预处理原图 (获取线稿)
             original_image = Image.open(abs_input_path).convert("RGB")
             self.logger.info(f"正在使用 {preprocessor_type} 提取线稿...")
             control_image = self._preprocess(original_image, preprocessor_type)
 
-            # 3. 加载 Pipeline
             pipe = self._load_base_pipeline(base_model_path, controlnet_model)
 
-            # 4. 图生图重绘
             self.logger.info(f"正在图生图重绘，强度: {strength}...")
             result_image = pipe(
                 prompt=prompt,
@@ -166,23 +139,17 @@ class ControlNetImg2Img:
                 controlnet_conditioning_scale=1.0,
             ).images[0]
 
-            # 5. 保存结果
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
             result_image.save(output_path)
 
             self.logger.info(f"生成完成: {output_path}")
-            return {
-                "status": "success",
-                "image_path": str(output_path),
-                "control_image_path": None  # 可选：这里可以顺便保存线稿图方便查看
-            }
+            return {"status": "success", "image_path": str(output_path), "control_image_path": None}
 
         except Exception as e:
             self.logger.error(f"执行失败: {e}")
             return {"status": "error", "error": str(e)}
 
 if __name__ == "__main__":
-    # 本地测试
     skill = ControlNetImg2Img()
     result = skill.execute(
         input_image_path="test.png",
