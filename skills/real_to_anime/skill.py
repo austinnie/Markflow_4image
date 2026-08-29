@@ -1,7 +1,7 @@
 # skills/real_to_anime/skill.py
 """
 真人转动漫 Skill - 将真实照片转换为动漫风格
-使用 OpenPose ControlNet 保持姿态，Inpaint 重绘整体
+复用通用 ControlNet 引擎（OpenPose保持姿态，高幅度重绘转风格）
 """
 
 import os
@@ -22,18 +22,18 @@ if str(project_root) not in sys.path:
 try:
     import torch
     from PIL import Image
-    from diffusers import StableDiffusionInpaintPipeline
     DIFFUSERS_AVAILABLE = True
 except ImportError:
     DIFFUSERS_AVAILABLE = False
-    logger.warning("diffusers 未安装")
+    logger.warning("torch 或 PIL 未安装")
 
+# ==================== 引入通用引擎（方案1） ====================
 try:
-    from skills.controlnet.skill import Controlnet
-    CONTROLNET_AVAILABLE = True
-except ImportError:
-    CONTROLNET_AVAILABLE = False
-    logger.warning("ControlNet 技能不可用")
+    from skills.controlnet_img2img.skill import ControlNetImg2Img
+    CONTROLNET_ENGINE_AVAILABLE = True
+except ImportError as e:
+    CONTROLNET_ENGINE_AVAILABLE = False
+    logger.warning(f"通用 ControlNet 引擎不可用: {e}")
 
 # 动漫风格预设
 ANIME_STYLES = {
@@ -65,36 +65,35 @@ ANIME_STYLES = {
 
 
 class RealToAnime:
-    """真人转动漫技能"""
+    """真人转动漫技能 v2.0"""
 
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.name = "real_to_anime"
-        self.version = "1.0.0"
+        self.version = "2.0.0"
 
         self.skill_dir = Path(__file__).parent.absolute()
         self.project_root = self.skill_dir.parent.parent.parent
+        # ==================== 强制本技能输出目录 ====================
         self.output_dir = self.skill_dir / "output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.models_dir = Path(self.config.get('models_dir', self.project_root / 'models'))
         self.device = self.config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.pipeline = None
-        self.current_model = None
-        self.controlnet_skill = None
-
-        if CONTROLNET_AVAILABLE:
+        # ==================== 初始化底层引擎 ====================
+        self.controlnet_engine = None
+        if CONTROLNET_ENGINE_AVAILABLE:
             try:
-                self.controlnet_skill = Controlnet(config={'device': self.device, 'max_size': 512})
-                logger.info("  ControlNet 技能初始化成功")
+                self.controlnet_engine = ControlNetImg2Img(config={'device': self.device})
+                logger.info("  ✅ 底层 ControlNet 引擎初始化成功")
             except Exception as e:
-                logger.warning(f"  ControlNet 技能初始化失败: {e}")
+                logger.warning(f"  底层引擎初始化失败: {e}")
 
         self._setup_logging()
         self._setup_config()
 
-        logger.info(f"RealToAnime 初始化完成")
+        logger.info(f"RealToAnime v{self.version} 初始化完成")
         logger.info(f"  设备: {self.device}")
         logger.info(f"  动漫风格: {len(ANIME_STYLES)} 种")
 
@@ -105,69 +104,16 @@ class RealToAnime:
 
     def _setup_config(self):
         defaults = {
-            'default_model': 'zenityXmix.inpainting.safetensors',
             'default_steps': 35,
-            'default_strength': 0.8,
+            'default_strength': 0.8, # 转动漫需要较高的重绘幅度来改变画风
             'default_style': 'modern',
         }
         for key, value in defaults.items():
             if key not in self.config:
                 self.config[key] = value
-        Path(self.config.get('output_dir', str(self.output_dir))).mkdir(parents=True, exist_ok=True)
 
-    def _find_model(self, model_name: str) -> Optional[Path]:
-        return Path(self.models_dir / "sd-v1-5" / model_name) if model_name else None
-
-    def _load_pipeline(self, model_path: Path) -> bool:
-        try:
-            self.pipeline = StableDiffusionInpaintPipeline.from_single_file(
-                str(model_path),
-                torch_dtype=torch.float16 if self.device == 'cuda' else torch.float32,
-                safety_checker=None,
-                requires_safety_checker=False,
-            )
-            self.pipeline.to(self.device)
-            self.pipeline.enable_attention_slicing()
-            self.current_model = model_path.name
-            return True
-        except Exception as e:
-            logger.error(f"  模型加载失败: {e}")
-            return False
-
-    def _load_model(self, model_name: str) -> bool:
-        model_path = self._find_model(model_name)
-        if not model_path or not model_path.exists():
-            logger.error(f"模型不存在: {model_name}")
-            return False
-        return self._load_pipeline(model_path)
-
-    def _generate_pose_image(self, image: Image.Image) -> Optional[Image.Image]:
-        if self.controlnet_skill is None:
-            return None
-        try:
-            result = self.controlnet_skill.execute(
-                action='detect_pose',
-                image=image,
-                controlnet_type='openpose',
-                output_path=None
-            )
-            if result['status'] == 'success':
-                output_path = result['output_path']
-                if os.path.exists(output_path):
-                    return Image.open(output_path)
-            return None
-        except Exception as e:
-            logger.warning(f"  姿态图生成失败: {e}")
-            return None
-
-    def _resize_image(self, image: Image.Image) -> tuple:
-        w, h = image.size
-        max_size = 768
-        if max(w, h) > max_size:
-            ratio = max_size / max(w, h)
-            new_w, new_h = int(w * ratio), int(h * ratio)
-            image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        return image, image.size
+    def list_styles(self) -> Dict[str, Any]:
+        return {"status": "success", "styles": list(ANIME_STYLES.keys())}
 
     def execute(self, **kwargs) -> Dict[str, Any]:
         """执行真人转动漫"""
@@ -175,9 +121,14 @@ class RealToAnime:
         logger.info(f"执行技能: {self.name}")
 
         try:
+            # ==================== 严格路径校验 ====================
             image_path = kwargs.get('image_path')
-            if not image_path or not os.path.exists(image_path):
-                return {"status": "error", "error": f"图片不存在: {image_path}"}
+            if not image_path:
+                return {"status": "error", "error": "image_path 是必填参数"}
+            
+            abs_image_path = Path(image_path).absolute()
+            if not os.path.exists(abs_image_path):
+                return {"status": "error", "error": f"输入图片不存在: {abs_image_path}。请检查路径是否正确！"}
 
             style = kwargs.get('style', self.config.get('default_style', 'modern'))
             if style not in ANIME_STYLES:
@@ -190,71 +141,60 @@ class RealToAnime:
             strength = kwargs.get('strength', self.config.get('default_strength', 0.8))
             steps = kwargs.get('steps', self.config.get('default_steps', 35))
             seed = kwargs.get('seed', -1)
-            model_name = kwargs.get('model_name', self.config.get('default_model'))
 
-            if not self._load_model(model_name):
-                return {"status": "error", "error": f"无法加载模型: {model_name}"}
+            # ==================== 直接调用底层引擎 ====================
+            if self.controlnet_engine is None:
+                return {"status": "error", "error": "底层 ControlNet 引擎不可用"}
 
-            image = Image.open(image_path).convert("RGB")
-            image, original_size = self._resize_image(image)
+            # 默认输出到本技能目录
+            output_path = kwargs.get('output_path')
+            if output_path is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_path = str(self.output_dir / f"{Path(abs_image_path).stem}_anime_{style}_{timestamp}.png")
 
             logger.info(f"动漫风格: {style}")
             logger.info(f"提示词: {prompt[:80]}...")
 
-            control_image = self._generate_pose_image(image)
+            result = self.controlnet_engine.execute(
+                input_image_path=str(abs_image_path),
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                preprocessor_type="OPENPOSE",   # 提取人体骨架
+                controlnet_model="openpose",    # 强制锁死人体姿态，防止变形
+                strength=strength,              # 较高的重绘幅度，完成画风转化
+                steps=steps,
+                output_path=output_path
+            )
 
-            if seed == -1:
-                seed = random.randint(0, 2**32 - 1)
-            generator = torch.Generator(device=self.device).manual_seed(seed)
-
-            current_size = image.size
-            mask = Image.new("L", current_size, 0)
-
-            pipeline_kwargs = {
-                'prompt': prompt,
-                'negative_prompt': negative_prompt if negative_prompt else None,
-                'image': image,
-                'mask_image': mask,
-                'strength': strength,
-                'num_inference_steps': steps,
-                'guidance_scale': 7.5,
-                'generator': generator,
-                'width': current_size[0],
-                'height': current_size[1],
-            }
-            if control_image is not None:
-                pipeline_kwargs['control_image'] = control_image
-
-            result = self.pipeline(**pipeline_kwargs).images[0]
-
-            if kwargs.get('output_path'):
-                output_path = kwargs['output_path']
-            else:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_path = str(self.output_dir / f"{Path(image_path).stem}_anime_{style}_{timestamp}.png")
-
-            os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-            result.save(output_path)
+            if result['status'] != 'success':
+                return result
 
             return {
                 "status": "success",
-                "output_path": output_path,
+                "output_path": result.get('image_path', output_path),
                 "style": style,
                 "generation_time": f"{time.time() - start_time:.2f}s",
-                "parameters": {"strength": strength, "steps": steps, "seed": seed}
+                "parameters": {
+                    "strength": strength, 
+                    "steps": steps, 
+                    "seed": seed,
+                    "controlnet": "openpose"
+                }
             }
 
         except Exception as e:
             logger.error(f"执行失败: {e}")
+            import traceback
+            traceback.print_exc()
             return {"status": "error", "error": str(e)}
 
-    def list_styles(self) -> Dict[str, Any]:
-        return {"status": "success", "styles": list(ANIME_STYLES.keys())}
+    def __repr__(self):
+        return f"<RealToAnime(name={self.name}, version={self.version})>"
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="真人转动漫工具")
+    parser = argparse.ArgumentParser(description="真人转动漫工具 v2.0")
     parser.add_argument("--input", "-i", required=True, help="输入图片路径")
     parser.add_argument("--output", "-o", help="输出路径")
     parser.add_argument("--style", "-s", default="modern",
