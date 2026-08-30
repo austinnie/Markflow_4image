@@ -26,6 +26,7 @@ class SkillExecutor:
         self.generator = CodeGenerator()
         self.project_builder = ProjectBuilder()  # 新增
         self.quality_checker = CodeQualityChecker()  # 新增
+        self._executed_skills = set()  # 新增：记录已执行的技能
 
     # ==================== 新增配置处理方法 ====================
     
@@ -393,6 +394,9 @@ class SkillExecutor:
         """
         try:
             instance = self.registry.get_instance(skill_name)
+
+            # 记录执行的技能
+            self._executed_skills.add(skill_name)            
             
             # ✅ 自动应用配置默认值到 instance.config
             if hasattr(instance, 'config') and hasattr(instance, 'name'):
@@ -412,6 +416,21 @@ class SkillExecutor:
                     )
             
             return instance.execute(**kwargs)
+
+            # ========== 新增：执行后清理 ==========
+            # 如果技能有 pipeline 属性，尝试清理（如果是 SD 技能）
+            if hasattr(instance, 'pipeline'):
+                try:
+                    # 将 pipeline 移到 CPU 并清空缓存（不强制卸载）
+                    if hasattr(instance.pipeline, 'to'):
+                        instance.pipeline.to('cpu')
+                    # 记录需要清理
+                    self._executed_skills.add(skill_name)
+                except:
+                    pass
+            
+            return result
+            
         except Exception as e:
             logger.error(f"执行技能失败: {e}")
             return {
@@ -419,7 +438,17 @@ class SkillExecutor:
                 "error": str(e),
                 "skill": skill_name
             }
-    
+
+    def clear_model_cache(self, skill_name: str = None):
+        """清理模型缓存"""
+        if skill_name:
+            if skill_name in self._executed_skills:
+                self._executed_skills.remove(skill_name)
+                logger.info(f"已清理技能缓存: {skill_name}")
+        else:
+            self._executed_skills.clear()
+            logger.info("已清理所有技能缓存")
+            
     def execute_from_markdown(self, markdown_content: str, **kwargs) -> Dict[str, Any]:
         """
         从Markdown执行技能

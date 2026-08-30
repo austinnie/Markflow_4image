@@ -349,7 +349,25 @@ class SDImageGenerator:
         self.folder_filter = folder_filter
         self.limit = limit
         self._call_count = 0
+
+        # ========== 新增：模型覆盖 ==========
+        self._override_model = model_name
+        if model_name:
+            print(f"📌 临时使用模型: {model_name}")
         
+        # ========== 新增：LoRA 覆盖 ==========
+        self._lora_weights = {}
+        if lora_config:
+            for item in lora_config.split(','):
+                item = item.strip()
+                if ':' in item:
+                    name, weight = item.split(':')
+                    self._lora_weights[name.strip()] = float(weight.strip())
+                else:
+                    self._lora_weights[item] = 0.8
+            if self._lora_weights:
+                print(f"📌 临时使用 LoRA: {self._lora_weights}")
+                
         # ✅ 加载统一配置
         self.sd_config = get_sd_config()
         print(f"📁 使用模型: {self.sd_config.get('model_name', '未设置')}")
@@ -543,8 +561,12 @@ class SDImageGenerator:
     def _get_model_name(self, scheme_model: Optional[str] = None) -> str:
         """
         获取模型名称
-        优先级: scheme 中指定 > 统一配置 > 回退值
+        优先级: 命令行指定 > scheme 中指定 > 统一配置 > 回退值
         """
+        # 如果命令行指定了模型，优先使用
+        if self._override_model:
+            return self._override_model
+        
         # 如果 scheme 指定了模型，使用它
         if scheme_model:
             return scheme_model
@@ -1007,6 +1029,10 @@ def main():
     parser.add_argument("--limit", type=int, help="每个风格最多生成 N 个组合")
     parser.add_argument("--total", type=int, help="总共生成 N 张图片（取前 N 个）")
     
+    # ========== 新增：模型管理参数 ==========
+    parser.add_argument("--model", type=str, help="指定底模名称（临时覆盖配置）")
+    parser.add_argument("--lora", type=str, help="指定 LoRA 名称，如 'lora_000004:0.7,aesthetic_anime:0.9'")
+    
     # ========== 衣服移除参数 ==========
     parser.add_argument("--remove-clothes", action="store_true", help="进入衣服移除模式")
     parser.add_argument("--input", type=str, help="输入图片路径或目录")
@@ -1033,7 +1059,9 @@ def main():
         args.config, args.source, auto_load=True,
         style_filter=args.style,
         folder_filter=args.folder,
-        limit=args.limit
+        limit=args.limit,
+        model_name=args.model,      # 新增
+        lora_config=args.lora       # 新增
     )
     generator.run(args)
 

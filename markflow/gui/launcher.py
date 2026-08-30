@@ -220,6 +220,15 @@ class MarkFlowLauncher:
         
         # ✅ 强制清除缓存
         self.executor.registry.clear()
+
+        # ========== 新增：刷新模型索引 ==========
+        try:
+            from markflow.utils.model_config import refresh_index
+            refresh_index()
+            self._log("🔄 模型索引已刷新", 'info')
+        except Exception as e:
+            self._log(f"⚠️ 刷新模型索引失败: {e}", 'warn')
+        
         
         # 重新加载技能
         if self.skill_dir.exists():

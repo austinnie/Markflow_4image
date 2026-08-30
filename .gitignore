@@ -46,4 +46,7 @@ models/
 # ?里明?放行，?保不被忽略！
 !requirements.txt
 !README.md
-!*.md
+!*.md"
+
+scripts/lora_index.json
+scripts/models_index.json
