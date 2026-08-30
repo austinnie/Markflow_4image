@@ -171,8 +171,8 @@ class ChangeBackground:
                 input_image_path=str(abs_image_path),
                 prompt=prompt,
                 negative_prompt=negative_prompt,
-                preprocessor_type="MLSD",
-                controlnet_model="depth",
+                preprocessor_type="HED",  # ✅ 从 "MLSD" 改为 "HED"
+                controlnet_model="depth",  # 或 "canny"
                 strength=strength,
                 steps=steps,
                 output_path=output_path
