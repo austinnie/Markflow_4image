@@ -23,7 +23,7 @@ if str(project_root) not in sys.path:
 
 # ==================== 配置 ====================
 DEFAULT_INPUT = "input/girl.jpg"
-OUTPUT_SUFFIX = "_resized"  # 输出文件名后缀
+OUTPUT_SUFFIX = "_resized"  # 输出文件名后缀（仅在 --no-overwrite 时使用）
 
 # ==================== 多档位预设 ====================
 SCALE_MODES = {
@@ -59,7 +59,7 @@ def get_recommended_size():
 
 
 def resize_image(input_path: Path, max_size: int = None, output_path: Path = None, 
-                 overwrite: bool = False, align: int = 64):
+                 overwrite: bool = True, align: int = 64):  # 默认 overwrite=True
     """缩放图片到指定最大边长"""
     if max_size is None:
         max_size = get_recommended_size()
@@ -74,8 +74,7 @@ def resize_image(input_path: Path, max_size: int = None, output_path: Path = Non
     # 如果已经小于目标，跳过
     if w <= max_size and h <= max_size:
         print(f"✅ 图片尺寸 {w}x{h} 已小于 {max_size}，无需缩放")
-        if output_path is None:
-            return input_path
+        return input_path
     
     # 等比例缩放
     if w > h:
@@ -94,10 +93,13 @@ def resize_image(input_path: Path, max_size: int = None, output_path: Path = Non
     
     resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
     
+    # 确定输出路径
     if output_path is None:
         if overwrite:
+            # 默认覆盖原图
             output_path = input_path
         else:
+            # 不覆盖时添加 _resized 后缀
             stem = input_path.stem
             suffix = input_path.suffix
             if stem.endswith(OUTPUT_SUFFIX):
@@ -112,14 +114,19 @@ def resize_image(input_path: Path, max_size: int = None, output_path: Path = Non
     return output_path
 
 
-def batch_process(input_dir: Path, max_size: int = None, overwrite: bool = False):
+def batch_process(input_dir: Path, max_size: int = None, overwrite: bool = True):  # 默认 overwrite=True
     """批量处理目录下所有图片"""
     if not input_dir.exists():
         print(f"❌ 目录不存在: {input_dir}")
         return
     
+    # 排除已缩放的图片（避免重复处理）
     extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
     images = [f for f in input_dir.iterdir() if f.suffix.lower() in extensions]
+    
+    # 如果 overwrite=False，排除 _resized 文件
+    if not overwrite:
+        images = [f for f in images if OUTPUT_SUFFIX not in f.stem]
     
     if not images:
         print(f"❌ 未找到图片: {input_dir}")
@@ -151,19 +158,21 @@ def main():
             print(f"  {key:<4} {val['size']:<6}px {val['name']:<15}{star}")
         print("=" * 50)
         print("\n💡 示例:")
-        print("  python scripts/preprocess_image.py --mode 3    # 使用 512px")
-        print("  python scripts/preprocess_image.py --mode 5    # 使用 640px")
-        print("  python scripts/preprocess_image.py --size 600  # 自定义 600px")
-        print("  python scripts/preprocess_image.py --all       # 批量处理")
-        print("  python scripts/preprocess_image.py --list      # 列出所有档位")
+        print("  python scripts/preprocess_image.py --mode 3          # 使用 512px (默认覆盖原图)")
+        print("  python scripts/preprocess_image.py --mode 5          # 使用 640px")
+        print("  python scripts/preprocess_image.py --no-overwrite    # 不覆盖，输出 _resized 文件")
+        print("  python scripts/preprocess_image.py --size 600        # 自定义 600px")
+        print("  python scripts/preprocess_image.py --all             # 批量处理")
+        print("  python scripts/preprocess_image.py --list            # 列出所有档位")
         return
     
     parser = argparse.ArgumentParser(
         description="图片预处理 - 缩放参考图以加速生成",
         epilog="""
 示例:
-  python scripts/preprocess_image.py                    # 处理 input/girl.jpg (默认 512px)
+  python scripts/preprocess_image.py                    # 处理 input/girl.jpg (默认 512px，覆盖原图)
   python scripts/preprocess_image.py --mode 5          # 使用预设档位 5 (640px)
+  python scripts/preprocess_image.py --no-overwrite   # 不覆盖原图，输出 _resized 文件
   python scripts/preprocess_image.py --size 640        # 指定最大边长 640px
   python scripts/preprocess_image.py --list            # 列出所有档位
   python scripts/preprocess_image.py --all             # 批量处理 input/
@@ -179,8 +188,8 @@ def main():
     parser.add_argument("--list", action="store_true", help="列出所有档位")
     parser.add_argument("--all", "-a", action="store_true", 
                        help="批量处理 input/ 目录下所有图片")
-    parser.add_argument("--overwrite", action="store_true", 
-                       help="覆盖原图（谨慎使用）")
+    parser.add_argument("--no-overwrite", action="store_true", 
+                       help="不覆盖原图，输出 _resized 文件 (默认覆盖)")
     parser.add_argument("--align", type=int, default=64, 
                        help="对齐到多少的倍数 (默认: 64)")
     
@@ -212,10 +221,13 @@ def main():
             print("💡 使用 --list 查看所有档位")
             sys.exit(1)
     
+    # 确定是否覆盖（默认 True，--no-overwrite 时 False）
+    overwrite = not args.no_overwrite
+    
     # 如果指定了 --all，批量处理
     if args.all:
         input_dir = Path("input")
-        batch_process(input_dir, max_size, args.overwrite)
+        batch_process(input_dir, max_size, overwrite)
         return
     
     # 确定输入路径
@@ -232,7 +244,7 @@ def main():
     
     # 执行缩放
     output_path = Path(args.output) if args.output else None
-    resize_image(input_path, max_size, output_path, args.overwrite, args.align)
+    resize_image(input_path, max_size, output_path, overwrite, args.align)
 
 
 if __name__ == "__main__":
