@@ -2,9 +2,28 @@
 import sys
 import torch
 import os
+import warnings      # ✅ 需要添加
+import logging       # ✅ 需要添加
 from pathlib import Path
 from PIL import Image
 from typing import Dict, Any, Optional
+
+# ============================================================
+# 🔧 修改点 1: 添加环境变量和警告过滤（文件开头）
+# ============================================================
+# 在导入 diffusers 之前设置环境变量
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["DIFFUSERS_VERBOSITY"] = "error"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+
+# 过滤 controlnet_aux 的注册警告
+warnings.filterwarnings("ignore", message="Overwriting tiny_vit_* in registry")
+warnings.filterwarnings("ignore", category=FutureWarning, module="timm")
+warnings.filterwarnings("ignore", category=UserWarning, module="controlnet_aux")
+
+# 设置日志级别
+logging.basicConfig(level=logging.INFO)
 
 # 导入模型配置管理器
 from markflow.utils.model_config import get_model_config
@@ -46,26 +65,41 @@ class ControlNetImg2Img:
             raise ValueError(f"找不到对应的 ControlNet 模型: {controlnet_key}")
 
         self.logger.info(f"加载 ControlNet: {cn_path}")
+        
+        # 🔧 修改点 2: ControlNet 加载时添加 low_cpu_mem_usage=True
         controlnet = ControlNetModel.from_pretrained(
-            cn_path, torch_dtype=torch.float32
+            cn_path, 
+            torch_dtype=torch.float32,
+            low_cpu_mem_usage=True,  # ✅ 新增
         )
 
         self.logger.info(f"准备加载底模: {base_model_path}")
+        
+        # 🔧 修改点 3: 添加 requires_safety_checker=False 消除警告
         if base_model_path.endswith('.safetensors') or base_model_path.endswith('.ckpt'):
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_single_file(
                 base_model_path,
                 controlnet=controlnet,
                 torch_dtype=torch.float32,
                 safety_checker=None,
-            ).to("cpu")
+                requires_safety_checker=False,  # ✅ 新增：消除 safety checker 警告
+                local_files_only=True,          # ✅ 新增：使用本地文件
+                low_cpu_mem_usage=True,         # ✅ 新增：减少内存使用
+            )
         else:
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 base_model_path,
                 controlnet=controlnet,
                 torch_dtype=torch.float32,
                 safety_checker=None,
-            ).to("cpu")
-
+                requires_safety_checker=False,  # ✅ 新增：消除 safety checker 警告
+                local_files_only=True,          # ✅ 新增：使用本地文件
+                low_cpu_mem_usage=True,         # ✅ 新增：减少内存使用
+            )
+            
+        # 保持 CPU
+        self.pipe = self.pipe.to("cpu")
+        
         ## 开启切片优化
         #try:
         #    self.pipe.enable_attention_slicing()
@@ -77,21 +111,25 @@ class ControlNetImg2Img:
 
     def _preprocess(self, image: Image.Image, preprocessor_type: str = "HED") -> Image.Image:
         """调用 controlnet_aux 获取线稿/边缘图"""
-        try:
-            if preprocessor_type == "HED":
-                from controlnet_aux import HEDdetector
-                processor = HEDdetector.from_pretrained("lllyasviel/Annotators")
-                return processor(image)
-            elif preprocessor_type == "OPENPOSE":
-                from controlnet_aux import OpenposeDetector
-                processor = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
-                return processor(image)
-            else:
-                # 默认 Canny
-                from controlnet_aux import CannyDetector
-                return CannyDetector()(image)
-        except ImportError as e:
-            raise ImportError(f"请先安装 controlnet_aux: pip install controlnet-aux. 错误: {e}")
+        # 🔧 修改点 4: 在预处理时临时禁用警告
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            
+            try:
+                if preprocessor_type == "HED":
+                    from controlnet_aux import HEDdetector
+                    processor = HEDdetector.from_pretrained("lllyasviel/Annotators")
+                    return processor(image)
+                elif preprocessor_type == "OPENPOSE":
+                    from controlnet_aux import OpenposeDetector
+                    processor = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
+                    return processor(image)
+                else:
+                    # 默认 Canny
+                    from controlnet_aux import CannyDetector
+                    return CannyDetector()(image)
+            except ImportError as e:
+                raise ImportError(f"请先安装 controlnet_aux: pip install controlnet-aux. 错误: {e}")
 
     def execute(self, **kwargs) -> Dict[str, Any]:
         input_path = kwargs.get("input_image_path")
