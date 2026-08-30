@@ -66,12 +66,12 @@ class ControlNetImg2Img:
                 safety_checker=None,
             ).to("cpu")
 
-        # 开启切片优化
-        try:
-            self.pipe.enable_attention_slicing()
-            self.logger.info("✅ 已启用 CPU 注意力切片优化")
-        except Exception as e:
-            self.logger.warning(f"⚠️ 启用切片优化失败（不影响使用）: {e}")
+        ## 开启切片优化
+        #try:
+        #    self.pipe.enable_attention_slicing()
+        #    self.logger.info("✅ 已启用 CPU 注意力切片优化")
+        #except Exception as e:
+        #    self.logger.warning(f"⚠️ 启用切片优化失败（不影响使用）: {e}")
             
         return self.pipe
 
