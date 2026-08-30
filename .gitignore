@@ -50,3 +50,5 @@ models/
 
 scripts/lora_index.json
 scripts/models_index.json
+scripts/batch_remove_clothes.bat 
+scripts/batch_remove_clothes.py
