@@ -7,6 +7,7 @@
 import sys
 import time
 from pathlib import Path
+import argparse
 
 # 添加项目根目录
 project_root = Path(__file__).parent.parent
@@ -33,13 +34,27 @@ PREPROCESS_OVERWRITE = True             # 是否覆盖原图
 
 
 def preprocess_image_file(input_path: Path):
-    """预处理单张图片"""
+    """预处理单张图片 - 检查短边是否已符合目标"""
     if not PREPROCESS_ENABLED:
         return input_path
     
     if not input_path.exists():
         print(f"⚠️ 图片不存在: {input_path}")
         return input_path
+    
+    # 检查图片尺寸是否已经符合目标
+    try:
+        from PIL import Image
+        img = Image.open(input_path)
+        w, h = img.size
+        short_side = min(w, h)
+        
+        # 如果短边已经等于或小于 max_size，说明已经缩放过了
+        if short_side <= PREPROCESS_MAX_SIZE:
+            print(f"   ⏭️ 已缩放: {input_path.name} ({w}x{h}, 短边 {short_side} ≤ {PREPROCESS_MAX_SIZE})")
+            return input_path
+    except Exception as e:
+        print(f"   ⚠️ 无法读取图片尺寸: {e}")
     
     mode_name = SCALE_MODES[PREPROCESS_MODE]["name"]
     print(f"   📐 缩放: {input_path.name} ({PREPROCESS_MODE}: {mode_name} {PREPROCESS_MAX_SIZE}px)")
@@ -50,7 +65,6 @@ def preprocess_image_file(input_path: Path):
     )
     
     return Path(result) if result else input_path
-
 
 # ==================== 批量任务列表 ====================
 GENERATION_TASKS = [
@@ -137,11 +151,18 @@ def process_single_image(image_path: Path, image_index: int, total_images: int):
 
 
 def main():
+    # ========== 解析命令行参数 ==========
+    parser = argparse.ArgumentParser(description="批量生成女孩系列图")
+    parser.add_argument("--image", "-i", type=str, help="指定要处理的图片文件名 (如: girl.jpg)")
+    parser.add_argument("--first", "-f", action="store_true", help="只处理第一张图片")
+    parser.add_argument("--all", "-a", action="store_true", help="处理所有图片 (默认行为)")
+    args = parser.parse_args()
+    
     # 收集所有图片
     extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
     images = [f for f in INPUT_DIR.iterdir() if f.suffix.lower() in extensions]
     
-    # 排除已缩放的图片（如果不想处理 resized 文件）
+    # 排除已缩放的图片
     images = [f for f in images if '_resized' not in f.stem]
     
     if not images:
@@ -150,6 +171,36 @@ def main():
     
     # 排序
     images.sort()
+    
+    # ========== 根据参数筛选图片 ==========
+    if args.image:
+        # 查找指定的图片
+        target = INPUT_DIR / args.image
+        if not target.exists():
+            # 如果没有扩展名，自动尝试添加
+            for ext in extensions:
+                test_path = INPUT_DIR / f"{args.image}{ext}"
+                if test_path.exists():
+                    target = test_path
+                    break
+        
+        if target.exists():
+            images = [target]
+            print(f"📌 指定图片: {target.name}")
+        else:
+            print(f"❌ 未找到指定图片: {args.image}")
+            print(f"💡 可用的图片:")
+            for img in images:
+                print(f"   - {img.name}")
+            return
+    elif args.first:
+        images = images[:1]
+        print(f"📌 只处理第一张: {images[0].name}")
+    elif args.all:
+        print(f"📌 处理所有 {len(images)} 张图片")
+    else:
+        # 默认行为：处理所有图片
+        print(f"📌 处理所有 {len(images)} 张图片")
     
     print(f"📸 找到 {len(images)} 张图片")
     print(f"💾 输出目录: {OUTPUT_ROOT}")
