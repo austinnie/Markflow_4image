@@ -35,13 +35,12 @@ class ControlNetImg2Img:
         self.logger = logging.getLogger(self.name)
 
     def _load_base_pipeline(self, base_model_path, controlnet_key: str = "canny"):
-        """懒加载底模和 ControlNet 模型（纯 CPU 稳定模式）"""
+        """懒加载底模和 ControlNet 模型"""
         from diffusers import StableDiffusionControlNetImg2ImgPipeline, ControlNetModel
         
         if self.pipe is not None:
             return self.pipe
             
-        # 解析 ControlNet 模型路径
         cn_path = resolve_controlnet_path(controlnet_key)
         if not cn_path:
             raise ValueError(f"找不到对应的 ControlNet 模型: {controlnet_key}")
@@ -58,19 +57,18 @@ class ControlNetImg2Img:
                 controlnet=controlnet,
                 torch_dtype=torch.float32,
                 safety_checker=None,
-            ).to("cpu")  # CPU设备
+            ).to("cpu")
         else:
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 base_model_path,
                 controlnet=controlnet,
                 torch_dtype=torch.float32,
                 safety_checker=None,
-            ).to("cpu") 
+            ).to("cpu")
 
-        # 开启 CPU 优化切片，提速
+        # 开启切片优化
         try:
             self.pipe.enable_attention_slicing()
-            self.pipe.enable_vae_slicing()
             self.logger.info("✅ 已启用 CPU 注意力切片优化")
         except Exception as e:
             self.logger.warning(f"⚠️ 启用切片优化失败（不影响使用）: {e}")
@@ -122,8 +120,23 @@ class ControlNetImg2Img:
                 return {"status": "error", "error": "未找到基础底模路径，请检查 model_config.py"}
 
             original_image = Image.open(abs_input_path).convert("RGB")
+            
+            # ✅ 终极修复：强制将尺寸对齐到 64 的倍数，并计算出目标宽高
+            w, h = original_image.size
+            target_w = (w // 64) * 64
+            target_h = (h // 64) * 64
+            if target_w < 64: target_w = 64
+            if target_h < 64: target_h = 64
+            
+            self.logger.info(f"📐 最终生成尺寸: {target_w}x{target_h}")
+            original_image = original_image.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            
             self.logger.info(f"正在使用 {preprocessor_type} 提取线稿...")
             control_image = self._preprocess(original_image, preprocessor_type)
+
+            # ✅ 确保控制图也强制对齐到相同尺寸！
+            if control_image.size != original_image.size:
+                control_image = control_image.resize(original_image.size, Image.Resampling.LANCZOS)
 
             pipe = self._load_base_pipeline(base_model_path, controlnet_model)
 
@@ -133,6 +146,8 @@ class ControlNetImg2Img:
                 negative_prompt=negative_prompt,
                 image=original_image,
                 control_image=control_image,
+                width=target_w,   # ✅ 强制传入宽度
+                height=target_h,  # ✅ 强制传入高度
                 strength=strength,
                 num_inference_steps=30,
                 guidance_scale=7.5,
