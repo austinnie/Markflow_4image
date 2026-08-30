@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（MLSD + Depth 锁空间几何，完成光景转换）
 """
 
+import time
 import os
 import sys
 import json

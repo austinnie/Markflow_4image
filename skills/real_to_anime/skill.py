@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（OpenPose保持姿态，高幅度重绘转风格）
 """
 
+import time
 import os
 import sys
 import json

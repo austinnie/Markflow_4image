@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（OpenPose 锁骨架，高幅度重构肉体曲线）
 """
 
+import time
 import os
 import sys
 import json

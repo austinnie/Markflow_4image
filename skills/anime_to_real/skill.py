@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 保留动漫线条，高幅度重绘真人质感）
 """
 
+import time
 import os
 import sys
 import json

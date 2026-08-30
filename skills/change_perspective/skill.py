@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 锁结构，高幅度重绘转视角）
 """
 
+import time
 import os
 import sys
 import json

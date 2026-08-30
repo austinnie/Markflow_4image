@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 锁死构图，高幅度重构画面质感）
 """
 
+import time
 import os
 import sys
 import json

@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（OpenPose 锁骨架，高幅度重构面部年龄特征）
 """
 
+import time
 import os
 import sys
 import json

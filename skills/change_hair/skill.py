@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 锁脸锁发际线，精准换发色/发型）
 """
 
+import time
 import os
 import sys
 import json

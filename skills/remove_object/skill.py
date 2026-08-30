@@ -4,6 +4,7 @@
 默认使用手动遮罩，若遮罩生成成功，则复用通用 ControlNet 引擎并配合 Inpaint 兜底
 """
 
+import time
 import os
 import sys
 import json

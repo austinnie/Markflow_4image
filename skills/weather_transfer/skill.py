@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（MLSD + Depth 锁空间结构，转换天气氛围）
 """
 
+import time
 import os
 import sys
 import json

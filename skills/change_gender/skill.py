@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（OpenPose 锁姿态，高幅度重绘换骨相/发型/曲线）
 """
 
+import time
 import os
 import sys
 import json

@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（MLSD + Depth 锁空间结构，低强度精准加物体）
 """
 
+import time
 import os
 import sys
 import json

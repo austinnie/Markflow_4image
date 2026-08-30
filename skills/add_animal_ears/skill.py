@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 锁死面部，中强度精准生长兽耳）
 """
 
+import time
 import os
 import sys
 import json

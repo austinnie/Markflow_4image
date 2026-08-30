@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（Depth + Lineart 锁空间结构，完成光影转换）
 """
 
+import time
 import os
 import sys
 import json

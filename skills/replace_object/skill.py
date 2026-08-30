@@ -4,6 +4,7 @@
 默认使用手动遮罩，复用通用 ControlNet 引擎进行全局结构保持
 """
 
+import time
 import os
 import sys
 import json

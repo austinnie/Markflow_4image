@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 极低强度，精准叠加纹身纹理）
 """
 
+import time
 import os
 import sys
 import json

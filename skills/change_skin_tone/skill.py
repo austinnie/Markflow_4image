@@ -4,6 +4,7 @@
 优先使用 YOLO 定位皮肤区域，复用通用 ControlNet 引擎进行局部/全局重绘
 """
 
+import time
 import os
 import sys
 import json

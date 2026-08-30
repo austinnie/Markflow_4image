@@ -77,14 +77,9 @@ class ExpandToFullBody:
             except Exception as e:
                 logger.warning(f"  底层引擎初始化失败: {e}")
 
-        # 尝试初始化 MediaPipe (轻量、CPU高效)
+        # ==================== 初始化 MediaPipe（新版 API） ====================
         self._mediapipe_pose = None
-        try:
-            import mediapipe as mp
-            self._mp_pose = mp.solutions.pose
-            self._mediapipe_pose = self._mp_pose.Pose(static_image_mode=True, model_complexity=0)
-        except ImportError:
-            logger.warning("MediaPipe 未安装，将使用默认扩展逻辑")
+        self._init_mediapipe()
 
         self._setup_logging()
         self._setup_config()
@@ -93,6 +88,48 @@ class ExpandToFullBody:
         logger.info(f"  设备: {self.device}")
         logger.info(f"  目标尺寸: {self.target_width}x{self.target_height}")
         logger.info(f"  ControlNet: {'✅' if self.controlnet_engine else '❌'}")
+
+    def _init_mediapipe(self):
+        """初始化 MediaPipe（新版 API）"""
+        self._mediapipe_pose = None
+        try:
+            import mediapipe as mp
+            from mediapipe.tasks import python
+            from mediapipe.tasks.python import vision
+
+            # 模型文件路径
+            model_path = self.skill_dir / "pose_landmarker_heavy.task"
+
+            # 如果模型不存在，尝试下载
+            if not model_path.exists():
+                logger.info("  📥 下载 MediaPipe 姿态模型...")
+                try:
+                    import urllib.request
+                    url = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task"
+                    urllib.request.urlretrieve(url, str(model_path))
+                    logger.info(f"  ✅ 模型已下载: {model_path}")
+                except Exception as e:
+                    logger.warning(f"  ⚠️ 模型下载失败: {e}")
+                    return
+
+            # 初始化姿态检测器
+            pose_options = vision.PoseLandmarkerOptions(
+                base_options=python.BaseOptions(model_asset_path=str(model_path)),
+                running_mode=vision.RunningMode.IMAGE,
+                num_poses=1,
+                min_pose_detection_confidence=0.5,
+                min_pose_presence_confidence=0.5,
+                min_tracking_confidence=0.5
+            )
+            self._mediapipe_pose = vision.PoseLandmarker.create_from_options(pose_options)
+            logger.info("  ✅ MediaPipe (新版 API) 初始化成功")
+
+        except ImportError as e:
+            logger.warning(f"  ⚠️ MediaPipe 未安装: {e}")
+            logger.warning("  将使用默认扩展逻辑")
+        except Exception as e:
+            logger.warning(f"  ⚠️ MediaPipe 初始化失败: {e}")
+            logger.warning("  将使用默认扩展逻辑")
 
     def _setup_logging(self):
         log_level = self.config.get('log_level', 'INFO')
@@ -112,16 +149,27 @@ class ExpandToFullBody:
                 self.config[key] = value
 
     def _detect_head_position(self, image: Image.Image) -> tuple:
-        """使用 MediaPipe 检测头部在图像中的 Y 坐标比例"""
+        """使用 MediaPipe 检测头部在图像中的 Y 坐标比例（新版 API）"""
         try:
             if self._mediapipe_pose is None:
-                return image.size[1] * 0.15, image.size[0] // 2  # 默认返回
+                return image.size[1] * 0.15, image.size[0] // 2
 
-            img_rgb = np.array(image)
-            results = self._mediapipe_pose.process(img_rgb)
-            if results.pose_landmarks:
-                h, w = img_rgb.shape[:2]
-                nose = results.pose_landmarks.landmark[0]  # 0 是鼻子
+            import mediapipe as mp
+            from mediapipe.tasks import python
+            from mediapipe.tasks.python import vision
+
+            # 将 PIL Image 转换为 MediaPipe Image
+            img_rgb = image.convert('RGB')
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.array(img_rgb))
+
+            # 检测姿态
+            detection_result = self._mediapipe_pose.detect(mp_image)
+
+            if detection_result and detection_result.pose_landmarks:
+                landmarks = detection_result.pose_landmarks[0]
+                h, w = img_rgb.size[1], img_rgb.size[0]
+                # 0 是鼻子
+                nose = landmarks[0]
                 head_y = int(nose.y * h)
                 head_x = int(nose.x * w)
                 return head_y, head_x

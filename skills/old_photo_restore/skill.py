@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart）保持原始结构
 """
 
+import time
 import os
 import sys
 import json

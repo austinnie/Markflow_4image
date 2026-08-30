@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 锁死面部轮廓，精准调表情）
 """
 
+import time
 import os
 import sys
 import json

@@ -4,6 +4,7 @@
 复用通用 ControlNet 引擎（HED + Lineart 强制锁线，高幅度重绘上色）
 """
 
+import time
 import os
 import sys
 import json
