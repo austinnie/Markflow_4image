@@ -339,7 +339,8 @@ class PromptCombinator:
 
 class SDImageGenerator:
     def __init__(self, config_path: str = None, source: str = None, auto_load: bool = True,
-                 style_filter: str = None, folder_filter: str = None, limit: int = None):
+                 style_filter: str = None, folder_filter: str = None, limit: int = None,
+                 model_name: str = None, lora_config: str = None, max_size: int = None):  # 新增 max_size
         self.base_dir = Path(__file__).parent.parent
         self.schemes = []
         self.output_dir = None
@@ -367,7 +368,12 @@ class SDImageGenerator:
                     self._lora_weights[item] = 0.8
             if self._lora_weights:
                 print(f"📌 临时使用 LoRA: {self._lora_weights}")
-                
+
+        # ========== 新增：最大尺寸限制 ==========
+        self._max_size = max_size
+        if max_size:
+            print(f"📐 限制最大尺寸: {max_size}px")
+        
         # ✅ 加载统一配置
         self.sd_config = get_sd_config()
         print(f"📁 使用模型: {self.sd_config.get('model_name', '未设置')}")
@@ -591,6 +597,31 @@ class SDImageGenerator:
             return scheme_cfg
         return self.sd_config.get('default_cfg', 7.5)
     
+
+    def _apply_max_size(self, width: int, height: int) -> tuple:
+        """应用最大尺寸限制（保持宽高比）"""
+        if not self._max_size:
+            return width, height
+        
+        # 如果已经小于最大尺寸，不处理
+        if width <= self._max_size and height <= self._max_size:
+            return width, height
+        
+        # 计算缩放比例
+        if width > height:
+            scale = self._max_size / width
+        else:
+            scale = self._max_size / height
+        
+        new_w = int(width * scale)
+        new_h = int(height * scale)
+        
+        # 对齐到 64 的倍数
+        new_w = ((new_w + 31) // 64) * 64
+        new_h = ((new_h + 31) // 64) * 64
+        
+        return new_w, new_h
+        
     # ==================== 生成方法 ====================
     
     def generate_one(self, scheme, index: int = None, total: int = None):
@@ -631,8 +662,14 @@ class SDImageGenerator:
         steps = self._get_steps(params.get('steps'))
         cfg_scale = self._get_cfg_scale(params.get('cfg_scale'))
         
+        # ========== 新增：应用最大尺寸限制 ==========
+        width = params.get('width', 512)
+        height = params.get('height', 768)
+        width, height = self._apply_max_size(width, height)
+        
         print(f"📦 使用模型: {model_name}")
         print(f"⚙️  步数: {steps}, CFG: {cfg_scale}")
+        print(f"📐 尺寸: {width}x{height}")
         print(f"📝 提示词: {prompt[:80]}...")
         
         try:
@@ -641,8 +678,8 @@ class SDImageGenerator:
                 prompt=prompt,
                 negative_prompt=negative_prompt,
                 model_name=model_name,
-                width=params.get('width', 512),
-                height=params.get('height', 768),
+                width=width,
+                height=height,
                 steps=steps,
                 cfg_scale=cfg_scale,
                 seed=seed,
@@ -680,7 +717,7 @@ class SDImageGenerator:
             import traceback
             traceback.print_exc()
             return False
-    
+            
     def list_schemes(self):
         """列出所有方案"""
         if not self.schemes:
@@ -1033,6 +1070,10 @@ def main():
     parser.add_argument("--model", type=str, help="指定底模名称（临时覆盖配置）")
     parser.add_argument("--lora", type=str, help="指定 LoRA 名称，如 'lora_000004:0.7,aesthetic_anime:0.9'")
     
+    # ========== 新增：尺寸限制参数 ==========
+    parser.add_argument("--max-size", type=int, default=768, 
+                       help="限制最大边长 (默认: 768, 推荐 512-768)")
+    
     # ========== 衣服移除参数 ==========
     parser.add_argument("--remove-clothes", action="store_true", help="进入衣服移除模式")
     parser.add_argument("--input", type=str, help="输入图片路径或目录")
@@ -1061,10 +1102,11 @@ def main():
         folder_filter=args.folder,
         limit=args.limit,
         model_name=args.model,      # 新增
-        lora_config=args.lora       # 新增
+        lora_config=args.lora,      # 新增
+        max_size=args.max_size      # 新增
     )
     generator.run(args)
-
+    
 
 if __name__ == "__main__":
     main()

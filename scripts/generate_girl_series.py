@@ -1,6 +1,6 @@
 # scripts/generate_girl_series.py
 """
-给 input/girl.jpg 批量生成系列图
+给 input/ 目录下所有图片批量生成系列图
 自动组合不同的背景、姿势、表情、服装等技能
 """
 
@@ -15,12 +15,44 @@ if str(project_root) not in sys.path:
 
 from markflow.cli.commands import execute_skill
 
+# ========== 导入预处理 ==========
+import preprocess_image
+from preprocess_image import resize_image, SCALE_MODES
+
+
 # ==================== 配置 ====================
-REFERENCE_IMAGE = "input/girl.jpg"  # 你的统一输入目录
-OUTPUT_ROOT = Path("output")        # 统一输出目录
+INPUT_DIR = Path("input")               # 输入目录
+OUTPUT_ROOT = Path("output")            # 统一输出目录
 OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
-# 批量任务列表：每个任务包含（技能名称，参数）
+# ========== 预处理配置（档位模式） ==========
+PREPROCESS_ENABLED = True               # 是否启用预处理
+PREPROCESS_MODE = 3                     # 档位: 0-10 (3=512px 标准)
+PREPROCESS_MAX_SIZE = SCALE_MODES[PREPROCESS_MODE]["size"]
+PREPROCESS_OVERWRITE = True             # 是否覆盖原图
+
+
+def preprocess_image_file(input_path: Path):
+    """预处理单张图片"""
+    if not PREPROCESS_ENABLED:
+        return input_path
+    
+    if not input_path.exists():
+        print(f"⚠️ 图片不存在: {input_path}")
+        return input_path
+    
+    mode_name = SCALE_MODES[PREPROCESS_MODE]["name"]
+    print(f"   📐 缩放: {input_path.name} ({PREPROCESS_MODE}: {mode_name} {PREPROCESS_MAX_SIZE}px)")
+    result = resize_image(
+        input_path, 
+        max_size=PREPROCESS_MAX_SIZE,
+        overwrite=PREPROCESS_OVERWRITE
+    )
+    
+    return Path(result) if result else input_path
+
+
+# ==================== 批量任务列表 ====================
 GENERATION_TASKS = [
     # ========== 1. 换背景系列 ==========
     {"skill": "change_background", "params": {"preset": "beach", "strength": 0.55}},
@@ -47,7 +79,7 @@ GENERATION_TASKS = [
     {"skill": "add_glasses", "params": {"style": "round", "strength": 0.35}},
     {"skill": "add_animal_ears", "params": {"animal": "cat", "strength": 0.55}},
 
-    # ========== 6. 多技能复杂组合（换背景+换姿态） ==========
+    # ========== 6. 多技能复杂组合 ==========
     {"skill": "expand_to_full_body", "params": {"prompt": "a beautiful elegant woman standing, full body", "controlnet_type": "openpose"}},
     {"skill": "style_transfer", "params": {"style": "oil_painting", "strength": 0.75}},
     {"skill": "style_transfer", "params": {"style": "watercolor", "strength": 0.75}},
@@ -57,50 +89,89 @@ GENERATION_TASKS = [
 ]
 
 
-def main():
-    print(f"📸 准备为 {REFERENCE_IMAGE} 生成 {len(GENERATION_TASKS)} 张系列图...")
-    print(f"💾 输出目录: {OUTPUT_ROOT}")
-
+def process_single_image(image_path: Path, image_index: int, total_images: int):
+    """处理单张图片的所有任务"""
+    print(f"\n{'='*60}")
+    print(f"📸 处理图片 [{image_index}/{total_images}]: {image_path.name}")
+    print('='*60)
+    
+    # 预处理图片
+    processed_path = preprocess_image_file(image_path)
+    
     success_count = 0
-
+    total_tasks = len(GENERATION_TASKS)
+    
     for idx, task in enumerate(GENERATION_TASKS, 1):
         skill_name = task['skill']
-        params = task['params']
-
-        # 自动生成输出文件名
-        safe_name = f"{idx:02d}_{skill_name.replace('_', '-')}"
+        params = task['params'].copy()
+        
+        # 生成输出文件名: 图片名_任务序号_技能名.png
+        base_name = image_path.stem
+        safe_name = f"{base_name}_{idx:02d}_{skill_name.replace('_', '-')}"
         output_path = str(OUTPUT_ROOT / f"{safe_name}.png")
-
-        # 统一注入参数
-        params['image_path'] = REFERENCE_IMAGE
+        
+        # 注入参数
+        params['image_path'] = str(processed_path)
         params['output_path'] = output_path
-
-        print(f"\n[{idx}/{len(GENERATION_TASKS)}] 🚀 正在调用: {skill_name}")
-        print(f"    📝 参数: {params}")
-
+        
+        print(f"\n  [{idx}/{total_tasks}] 🚀 调用: {skill_name}")
+        
         try:
             result = execute_skill(skill_name, **params)
-
+            
             if isinstance(result, dict) and result.get('status') == 'success':
-                print(f"    ✅ 成功! 保存至: {result.get('output_path')}")
+                print(f"      ✅ 成功: {output_path}")
                 success_count += 1
             else:
-                # 打印错误详情
-                if isinstance(result, dict):
-                    print(f"    ❌ 失败: {result.get('error', '未知错误')}")
-                else:
-                    print(f"    ❌ 失败: {result}")
-
+                error = result.get('error', '未知错误') if isinstance(result, dict) else str(result)
+                print(f"      ❌ 失败: {error}")
+                
         except Exception as e:
-            print(f"    ❌ 执行异常: {e}")
+            print(f"      ❌ 异常: {e}")
             import traceback
             traceback.print_exc()
+        
+        time.sleep(0.5)
+    
+    return success_count, total_tasks
 
-        # 等待一下防止连续调用太吃内存
-        time.sleep(1)
 
-    print(f"\n🎉 批量生成结束！成功 {success_count}/{len(GENERATION_TASKS)} 张。")
-    print(f"📂 所有生成的图片已保存在: {OUTPUT_ROOT}")
+def main():
+    # 收集所有图片
+    extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
+    images = [f for f in INPUT_DIR.iterdir() if f.suffix.lower() in extensions]
+    
+    # 排除已缩放的图片（如果不想处理 resized 文件）
+    images = [f for f in images if '_resized' not in f.stem]
+    
+    if not images:
+        print(f"❌ 在 {INPUT_DIR} 中未找到图片")
+        return
+    
+    # 排序
+    images.sort()
+    
+    print(f"📸 找到 {len(images)} 张图片")
+    print(f"💾 输出目录: {OUTPUT_ROOT}")
+    print(f"📐 档位 {PREPROCESS_MODE}: {SCALE_MODES[PREPROCESS_MODE]['name']} ({PREPROCESS_MAX_SIZE}px)")
+    print(f"📋 每张图片执行 {len(GENERATION_TASKS)} 个任务")
+    print(f"📊 总计: {len(images) * len(GENERATION_TASKS)} 次生成")
+    print("=" * 60)
+    
+    total_success = 0
+    total_all = 0
+    
+    for idx, img_path in enumerate(images, 1):
+        success, total = process_single_image(img_path, idx, len(images))
+        total_success += success
+        total_all += total
+    
+    print(f"\n{'='*60}")
+    print(f"🎉 全部完成！")
+    print(f"   📸 图片: {len(images)} 张")
+    print(f"   ✅ 成功: {total_success}/{total_all} 次")
+    print(f"   📂 输出: {OUTPUT_ROOT}")
+    print('='*60)
 
 
 if __name__ == "__main__":
