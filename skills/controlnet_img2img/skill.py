@@ -4,15 +4,27 @@ ControlNet 图生图技能 - 完整版
 支持所有参数透传，集成统一模型配置
 """
 
+# ===== 环境变量设置（消除警告） =====
 import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["DIFFUSERS_VERBOSITY"] = "error"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+
 import sys
 import time
 import json
 import logging
 import random
+import warnings
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
+
+# 过滤警告
+warnings.filterwarnings("ignore", message="Overwriting tiny_vit_* in registry")
+warnings.filterwarnings("ignore", category=FutureWarning, module="timm")
+warnings.filterwarnings("ignore", category=UserWarning, module="controlnet_aux")
 
 # 添加项目根目录到路径
 project_root = Path(__file__).parent.parent.parent
@@ -30,9 +42,9 @@ class ControlnetImg2Img:
         self.name = "controlnet_img2img"
         self.version = "2.0.0"
         self.skill_dir = Path(__file__).parent
+        self._pipeline = None  # 缓存 pipeline
         self._setup_logging()
         self._setup_config()
-        self._pipeline = None  # 缓存 pipeline
     
     def _setup_logging(self):
         """设置日志"""
@@ -58,6 +70,8 @@ class ControlnetImg2Img:
         for key, value in defaults.items():
             if key not in self.config:
                 self.config[key] = value
+    
+    # ==================== 主执行方法 ====================
     
     # ==================== 主执行方法 ====================
     
@@ -641,7 +655,7 @@ class ControlnetImg2Img:
             image = image.crop((0, top, w, bottom))
         
         return image.resize((target_w, target_h), Image.Resampling.LANCZOS)
-    
+
     def _fit_image(self, image, target_w: int, target_h: int) -> Image.Image:
         """适应图片到目标尺寸（保持比例，填充空白）"""
         w, h = image.size
@@ -663,6 +677,92 @@ class ControlnetImg2Img:
         
         return canvas
     
+    
+    def _preprocess(self, image: Image.Image, preprocessor_type: str = "HED") -> Optional[Image.Image]:
+        """调用 controlnet_aux 获取线稿/边缘图（兼容旧版本）"""
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            
+            try:
+                if preprocessor_type.upper() == "HED":
+                    from controlnet_aux import HEDdetector
+                    processor = HEDdetector.from_pretrained("lllyasviel/Annotators")
+                    result = processor(image)
+                    return result if isinstance(result, Image.Image) else Image.fromarray(result)
+                    
+                elif preprocessor_type.upper() == "OPENPOSE":
+                    from controlnet_aux import OpenposeDetector
+                    processor = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
+                    result = processor(image)
+                    return result if isinstance(result, Image.Image) else Image.fromarray(result)
+                    
+                elif preprocessor_type.upper() == "CANNY":
+                    from controlnet_aux import CannyDetector
+                    result = CannyDetector()(image)
+                    return result if isinstance(result, Image.Image) else Image.fromarray(result)
+                    
+                else:
+                    from controlnet_aux import HEDdetector
+                    processor = HEDdetector.from_pretrained("lllyasviel/Annotators")
+                    result = processor(image)
+                    return result if isinstance(result, Image.Image) else Image.fromarray(result)
+                    
+            except ImportError as e:
+                logger.warning(f"controlnet_aux 未安装: {e}")
+                logger.warning("请安装: pip install controlnet-aux")
+                return None
+            except Exception as e:
+                logger.warning(f"预处理失败: {e}")
+                return None
+
+    def _load_base_pipeline(self, base_model_path: str, controlnet_key: str = "canny"):
+        """懒加载底模和 ControlNet 模型（兼容旧版本）"""
+        from diffusers import StableDiffusionControlNetImg2ImgPipeline, ControlNetModel
+        import torch
+
+        if self._pipeline is not None:
+            return self._pipeline
+
+        from markflow.utils.controlnet_config import resolve_controlnet_path
+
+        cn_path = resolve_controlnet_path(controlnet_key)
+        if not cn_path:
+            raise ValueError(f"找不到对应的 ControlNet 模型: {controlnet_key}")
+
+        logger.info(f"加载 ControlNet: {cn_path}")
+
+        controlnet = ControlNetModel.from_pretrained(
+            cn_path,
+            torch_dtype=torch.float32,
+            low_cpu_mem_usage=True,
+        )
+
+        logger.info(f"准备加载底模: {base_model_path}")
+
+        if base_model_path.endswith('.safetensors') or base_model_path.endswith('.ckpt'):
+            self._pipeline = StableDiffusionControlNetImg2ImgPipeline.from_single_file(
+                base_model_path,
+                controlnet=controlnet,
+                torch_dtype=torch.float32,
+                safety_checker=None,
+                requires_safety_checker=False,
+                local_files_only=True,
+                low_cpu_mem_usage=True,
+            )
+        else:
+            self._pipeline = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+                base_model_path,
+                controlnet=controlnet,
+                torch_dtype=torch.float32,
+                safety_checker=None,
+                requires_safety_checker=False,
+                local_files_only=True,
+                low_cpu_mem_usage=True,
+            )
+
+        self._pipeline = self._pipeline.to("cpu")
+        return self._pipeline
+    
     # ==================== 辅助方法 ====================
     
     def __repr__(self):
@@ -672,16 +772,16 @@ class ControlnetImg2Img:
 # ==================== 快捷函数 ====================
 
 def create_skill(config: Dict = None) -> ControlnetImg2Img:
-    """创建技能实例"""
     return ControlnetImg2Img(config)
 
 
-# ==================== 测试入口 ====================
+# ==================== 兼容旧代码 ====================
+
+ControlNetImg2Img = ControlnetImg2Img
+
 
 if __name__ == "__main__":
-    # 测试
     skill = ControlnetImg2Img({"device": "cpu"})
-    
     result = skill.execute(
         image_path="input/girl.jpg",
         prompt="a beautiful woman",
@@ -689,5 +789,4 @@ if __name__ == "__main__":
         steps=10,
         output_dir="./output/test",
     )
-    
     print(json.dumps(result, indent=2, ensure_ascii=False))
