@@ -1,0 +1,73 @@
+{
+  "name": "SignatureExtractor",
+  "display_name": "SignatureExtractor",
+  "description": "> 从带有签名的图片中，提取纯黑字迹并去除背景，自动裁剪生成透明背景的签名图片，可直接插入到文档中。\n该技能利用 OpenCV 计算机视觉技术，对包含手写签名或印章的图片进行预处理。通过自适应阈值化、连通域面积过滤和形态学平滑，精准提取出签名笔迹，去除纸张底色、噪点和无关背景，并自动裁剪出签名的主体区域。最终输出带有 Alpha 通道的透明背景 PNG 图片，可直接无缝插入到 PDF 或 Word 文档中。",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "input_path",
+      "type": "string",
+      "description": "包含签名的原图片路径 (支持 .jpg, .png, .bmp)",
+      "required": true,
+      "default": ""
+    },
+    {
+      "name": "output_path",
+      "type": "string",
+      "description": "提取后透明背景签名图片的保存路径 (必须为 .png)",
+      "required": true,
+      "default": ""
+    },
+    {
+      "name": "min_area",
+      "type": "integer",
+      "description": "过滤噪点的最小像素面积，可根据图片分辨率微调",
+      "required": false,
+      "default": "30"
+    },
+    {
+      "name": "save_result",
+      "type": "boolean",
+      "description": "是否将提取参数和结果信息保存为日志文件",
+      "required": false,
+      "default": "True"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "status",
+      "description": "执行状态：success / error"
+    },
+    {
+      "name": "result",
+      "description": "包含提取结果详情、保存路径和图片尺寸等信息的字典"
+    },
+    {
+      "name": "metadata",
+      "description": "技能名称、版本、执行时间等元数据"
+    }
+  ],
+  "dependencies": [
+    "opencv-python",
+    "numpy"
+  ],
+  "tags": [],
+  "features": [
+    "**自适应提取** - 利用 cv2.adaptiveThreshold 自动适应光照不均、纸张纹理复杂的图片。",
+    "**智能降噪** - 基于连通域面积（min_area）过滤，精准剔除微小噪点，保留真实笔迹。",
+    "**自动边缘裁剪** - 自动计算签名包围盒，去除空白边缘，并留有适当Padding以保证视觉效果。",
+    "**透明背景输出** - 输出 RGBA 格式的 PNG，仅保留纯黑笔迹，背景全透明，兼容任何文档底色。"
+  ],
+  "generated_at": "2026-08-31T23:24:24.896530",
+  "quality": {
+    "score": 85,
+    "passed": true,
+    "checks_count": 4,
+    "errors_count": 0
+  },
+  "trace": {
+    "coverage": 0.9,
+    "total_requirements": 10,
+    "implemented": 9
+  }
+}
