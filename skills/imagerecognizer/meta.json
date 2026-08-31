@@ -1,0 +1,89 @@
+{
+  "name": "ImageRecognizer",
+  "display_name": "ImageRecognizer",
+  "description": "ImageRecognizer 是一个基于 Ollama 多模态模型的图片识别技能。它可以识别图片中的物体、场景、人物、文字等内容，并支持将识别结果翻译成 14 种不同的语言。适用于图片内容分析、OCR 文字提取、多语言场景理解等任务。",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "图片文件路径（支持 jpg/png/webp/gif/bmp）",
+      "required": true,
+      "default": ""
+    },
+    {
+      "name": "language",
+      "type": "string",
+      "description": "输出语言代码（zh/en/ja/ko/fr/de/es/it/pt/ru/ar/th/vi/id/hi）",
+      "required": false,
+      "default": "zh"
+    },
+    {
+      "name": "detail_level",
+      "type": "string",
+      "description": "详细程度（brief/standard/detailed/tags/json）",
+      "required": false,
+      "default": "standard"
+    },
+    {
+      "name": "translate_to",
+      "type": "string",
+      "description": "翻译目标语言代码",
+      "required": false,
+      "default": ""
+    },
+    {
+      "name": "save_result",
+      "type": "boolean",
+      "description": "是否保存结果到文件",
+      "required": false,
+      "default": "true"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "recognition",
+      "description": "图片识别结果文本"
+    },
+    {
+      "name": "translated_result",
+      "description": "翻译后的结果（如果指定了 translate_to）"
+    },
+    {
+      "name": "saved_to",
+      "description": "结果文件保存路径（JSON 格式）"
+    },
+    {
+      "name": "image_name",
+      "description": "图片文件名"
+    },
+    {
+      "name": "executed_at",
+      "description": "执行时间"
+    }
+  ],
+  "dependencies": [
+    "requests",
+    "Ollama"
+  ],
+  "tags": [],
+  "features": [
+    "**图片内容识别** - 识别图片中的物体、场景、人物、文字、颜色、氛围等",
+    "**多语言输出** - 支持 14 种语言的识别结果输出（中文、英文、日语、韩语、法语等）",
+    "**翻译功能** - 将识别结果翻译成指定的目标语言",
+    "**多级详细程度** - 支持简洁、标准、详细、标签、JSON 五种输出模式",
+    "**结果自动保存** - 识别结果自动保存为 JSON 和 TXT 文件"
+  ],
+  "generated_at": "2026-08-31T22:27:54.438569",
+  "quality": {
+    "score": 85,
+    "passed": true,
+    "checks_count": 4,
+    "errors_count": 0
+  },
+  "trace": {
+    "coverage": 0.9166666666666666,
+    "total_requirements": 12,
+    "implemented": 11
+  }
+}
