@@ -20,6 +20,7 @@ import warnings
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
+from PIL import Image
 
 # 过滤警告
 warnings.filterwarnings("ignore", message="Overwriting tiny_vit_* in registry")
@@ -78,7 +79,7 @@ class ControlnetImg2Img:
     def execute(
         self,
         # ===== 必填参数 =====
-        image_path: str,
+        input_image_path: str = None, 
         
         # ===== 提示词参数 =====
         prompt: str = None,
@@ -127,7 +128,7 @@ class ControlnetImg2Img:
         执行 ControlNet 图生图
         
         Args:
-            image_path: 输入图片路径
+            input_image_path: 输入图片路径
             prompt: 正向提示词
             negative_prompt: 负向提示词
             preset: 预设模板 (beach, forest, city, sakura, sunset, snow, rain, night, garden, mountain)
@@ -188,16 +189,19 @@ class ControlnetImg2Img:
         logger.info("=" * 60)
         logger.info(f"🚀 ControlNet 图生图 v{self.version}")
         logger.info("=" * 60)
-        logger.info(f"📁 输入: {image_path}")
+        logger.info(f"📁 输入: {input_image_path}")
         logger.info(f"📝 提示词: {prompt[:80] if prompt else 'None'}...")
         logger.info(f"🎯 ControlNet: {controlnet_type}")
         logger.info(f"⚙️  强度: {strength}, 步数: {steps}, CFG: {cfg_scale}")
         logger.info(f"💻 设备: {device}")
         
         # ===== 2. 验证输入 =====
-        input_image = Path(image_path)
-        if not input_image.exists():
-            raise FileNotFoundError(f"输入图片不存在: {image_path}")
+        if not input_image_path:
+            raise ValueError("必须指定 input_image_path")
+        
+        input_path = Path(input_image_path)
+        if not input_path.exists():
+            raise FileNotFoundError(f"输入图片不存在: {input_image_path}")
         
         # 处理预设
         if preset and not prompt:
@@ -210,7 +214,7 @@ class ControlnetImg2Img:
         # 处理输出路径
         if not output_path:
             output_path = self._generate_output_path(
-                output_dir, filename_prefix, image_path
+                output_dir, filename_prefix, input_image_path  
             )
         
         output_path = Path(output_path)
@@ -222,7 +226,7 @@ class ControlnetImg2Img:
         
         # ===== 3. 构建参数 =====
         params = {
-            "image_path": str(input_image),
+            "image_path": str(Path(input_image_path)),
             "prompt": prompt,
             "negative_prompt": negative_prompt,
             "output_path": str(output_path),
@@ -373,6 +377,7 @@ class ControlnetImg2Img:
         output_path = params["output_path"]
         controlnet_type = params["controlnet_type"]
         controlnet_strength = params.get("controlnet_strength", 1.0)
+        
         controlnet_guidance_start = params.get("controlnet_guidance_start", 0.0)
         controlnet_guidance_end = params.get("controlnet_guidance_end", 1.0)
         strength = params.get("strength", 0.6)
@@ -383,6 +388,7 @@ class ControlnetImg2Img:
         model_type = params.get("model_type")
         width = params.get("width")
         height = params.get("height")
+        resize_mode = params.get("resize_mode", "crop")
         device = params.get("device", "cpu")
         scheduler = params.get("scheduler", "DDIM")
         lora_weights = params.get("lora_weights", {})
