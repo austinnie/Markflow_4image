@@ -48,3 +48,22 @@ python -m markflow.cli.commands execute change_pose image_path="input/person.jpg
 
 python -m markflow.cli.commands execute change_pose image_path="input/person.jpg" pose="sitting" strength=0.7
 ```
+
+## 独立使用方式
+```bash
+1. 批量生成所有姿态
+python skills/change_pose/skill.py --image_path input-spec/girl_03.png --all
+
+2. 批量生成所有姿态（自定义参数）
+python skills/change_pose/skill.py \
+    --image_path input-spec/girl_03.png \
+    --all \
+    --strength 0.7 \
+    --steps 40 \
+    --output_dir output/my_poses
+	
+3. 生成单个姿态（原有功能保持不变）
+python skills/change_pose/skill.py \
+    --image_path input-spec/girl_03.png \
+    --pose dancing
+```
