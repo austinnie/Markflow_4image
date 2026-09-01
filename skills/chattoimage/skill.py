@@ -1,18 +1,29 @@
 """
 ChatToImage - 对话式图像生成技能
 通过自然语言对话生成和编辑图片
+
+支持两种调用方式:
+  1. CLI: python -m markflow.cli.commands execute ChatToImage message="帮我换衣服"
+  2. 直接运行: python skills/chattoimage/skill.py --message "帮我换衣服" --image_path input.jpg
 """
 
 import os
 import re
 import json
+import sys
 import logging
 import requests
 import time
+import argparse
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
 from collections import deque
+
+# 确保项目根目录在 sys.path 中
+_project_root = Path(__file__).parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 # 尝试导入 markflow 核心
 try:
@@ -45,7 +56,8 @@ class Chattoimage:
                 "seed": "{seed}",
                 "batch_size": 1
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
+            "description": "文生图"
         },
 
         # ---- 人物编辑 ----
@@ -59,7 +71,8 @@ class Chattoimage:
                 "use_controlnet": True,
                 "save_mask": False
             },
-            "required": ["image_path", "prompt"]
+            "required": ["image_path", "prompt"],
+            "description": "换衣服"
         },
         "change_clothing_style": {
             "skill": "change_clothing_style",
@@ -69,7 +82,8 @@ class Chattoimage:
                 "prompt": "{prompt}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "style"]
+            "required": ["image_path", "style"],
+            "description": "换服装风格"
         },
         "change_expression": {
             "skill": "change_expression",
@@ -78,7 +92,8 @@ class Chattoimage:
                 "expression": "{expression}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "expression"]
+            "required": ["image_path", "expression"],
+            "description": "换表情"
         },
         "change_hair": {
             "skill": "change_hair",
@@ -89,7 +104,8 @@ class Chattoimage:
                 "prompt": "{prompt}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "换发型/发色"
         },
         "change_eye_color": {
             "skill": "change_eye_color",
@@ -98,7 +114,8 @@ class Chattoimage:
                 "color": "{color}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "color"]
+            "required": ["image_path", "color"],
+            "description": "换眼睛颜色"
         },
         "change_face": {
             "skill": "change_face",
@@ -108,7 +125,8 @@ class Chattoimage:
                 "prompt": "{prompt}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "face_prompt"]
+            "required": ["image_path", "face_prompt"],
+            "description": "换脸"
         },
         "change_skin_tone": {
             "skill": "change_skin_tone",
@@ -117,7 +135,8 @@ class Chattoimage:
                 "tone": "{tone}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "tone"]
+            "required": ["image_path", "tone"],
+            "description": "换肤色"
         },
         "change_body_type": {
             "skill": "change_body_type",
@@ -126,7 +145,8 @@ class Chattoimage:
                 "body_type": "{body_type}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "body_type"]
+            "required": ["image_path", "body_type"],
+            "description": "换体型"
         },
         "change_age": {
             "skill": "change_age",
@@ -135,7 +155,8 @@ class Chattoimage:
                 "age": "{age}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "age"]
+            "required": ["image_path", "age"],
+            "description": "改变年龄"
         },
         "change_gender": {
             "skill": "change_gender",
@@ -144,7 +165,8 @@ class Chattoimage:
                 "direction": "{direction}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "direction"]
+            "required": ["image_path", "direction"],
+            "description": "改变性别"
         },
         "change_nationality": {
             "skill": "change_nationality",
@@ -153,7 +175,8 @@ class Chattoimage:
                 "ethnicity": "{ethnicity}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "ethnicity"]
+            "required": ["image_path", "ethnicity"],
+            "description": "改变国籍"
         },
         "change_makeup": {
             "skill": "change_makeup",
@@ -162,7 +185,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "style"]
+            "required": ["image_path", "style"],
+            "description": "改变妆容"
         },
 
         # ---- 场景/背景编辑 ----
@@ -173,7 +197,8 @@ class Chattoimage:
                 "preset": "{preset}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "preset"]
+            "required": ["image_path", "preset"],
+            "description": "换背景"
         },
         "change_lighting": {
             "skill": "change_lighting",
@@ -182,7 +207,8 @@ class Chattoimage:
                 "lighting": "{lighting}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "lighting"]
+            "required": ["image_path", "lighting"],
+            "description": "换光照"
         },
         "change_perspective": {
             "skill": "change_perspective",
@@ -191,7 +217,8 @@ class Chattoimage:
                 "perspective": "{perspective}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "perspective"]
+            "required": ["image_path", "perspective"],
+            "description": "换视角"
         },
         "change_furniture": {
             "skill": "change_furniture",
@@ -200,7 +227,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "style"]
+            "required": ["image_path", "style"],
+            "description": "换家具风格"
         },
 
         # ---- 添加元素 ----
@@ -211,7 +239,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "加眼镜"
         },
         "add_animal_ears": {
             "skill": "add_animal_ears",
@@ -220,7 +249,8 @@ class Chattoimage:
                 "animal": "{animal}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "animal"]
+            "required": ["image_path", "animal"],
+            "description": "加兽耳"
         },
         "add_tattoo": {
             "skill": "add_tattoo",
@@ -229,7 +259,8 @@ class Chattoimage:
                 "tattoo": "{tattoo}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "tattoo"]
+            "required": ["image_path", "tattoo"],
+            "description": "加纹身"
         },
         "add_background_objects": {
             "skill": "add_background_objects",
@@ -238,7 +269,8 @@ class Chattoimage:
                 "object": "{object}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "object"]
+            "required": ["image_path", "object"],
+            "description": "加背景物体"
         },
 
         # ---- 风格转换 ----
@@ -249,7 +281,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "style"]
+            "required": ["image_path", "style"],
+            "description": "风格转换"
         },
         "anime_to_real": {
             "skill": "anime_to_real",
@@ -258,7 +291,8 @@ class Chattoimage:
                 "style": "photorealistic",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "动漫转写实"
         },
         "real_to_anime": {
             "skill": "real_to_anime",
@@ -267,7 +301,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "写实转动漫"
         },
         "sketch_to_real": {
             "skill": "sketch_to_real",
@@ -276,7 +311,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "素描转写实"
         },
         "colorize_sketch": {
             "skill": "colorize_sketch",
@@ -285,7 +321,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "线稿上色"
         },
 
         # ---- 天气/季节/昼夜转换 ----
@@ -296,7 +333,8 @@ class Chattoimage:
                 "weather": "{weather}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "weather"]
+            "required": ["image_path", "weather"],
+            "description": "天气转换"
         },
         "season_transfer": {
             "skill": "season_transfer",
@@ -305,7 +343,8 @@ class Chattoimage:
                 "season": "{season}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "season"]
+            "required": ["image_path", "season"],
+            "description": "季节转换"
         },
         "day_night_transfer": {
             "skill": "day_night_transfer",
@@ -314,7 +353,8 @@ class Chattoimage:
                 "mode": "{mode}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "mode"]
+            "required": ["image_path", "mode"],
+            "description": "昼夜转换"
         },
 
         # ---- 移除/替换 ----
@@ -328,7 +368,8 @@ class Chattoimage:
                 "steps": "{steps}",
                 "device": "cpu"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "去衣"
         },
         "remove_object": {
             "skill": "remove_object",
@@ -337,7 +378,8 @@ class Chattoimage:
                 "skip_manual": "{skip_manual}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "移除物体"
         },
         "replace_object": {
             "skill": "replace_object",
@@ -347,7 +389,8 @@ class Chattoimage:
                 "skip_manual": "{skip_manual}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "object_prompt"]
+            "required": ["image_path", "object_prompt"],
+            "description": "替换物体"
         },
 
         # ---- 生成类 ----
@@ -359,7 +402,8 @@ class Chattoimage:
                 "prompt": "{prompt}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "fantasy_type"]
+            "required": ["image_path", "fantasy_type"],
+            "description": "幻想角色生成"
         },
         "mecha_generator": {
             "skill": "mecha_generator",
@@ -369,7 +413,8 @@ class Chattoimage:
                 "prompt": "{prompt}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "机甲生成"
         },
         "human_to_robot": {
             "skill": "human_to_robot",
@@ -379,7 +424,8 @@ class Chattoimage:
                 "prompt": "{prompt}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "人转机器人"
         },
 
         # ---- 扩展 ----
@@ -390,7 +436,8 @@ class Chattoimage:
                 "prompt": "{prompt}",
                 "controlnet_type": "openpose"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "扩展为全身图"
         },
 
         # ---- 修复 ----
@@ -401,7 +448,8 @@ class Chattoimage:
                 "style": "{style}",
                 "strength": "{strength}"
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
+            "description": "老照片修复"
         },
     }
 
@@ -425,7 +473,7 @@ class Chattoimage:
     # ==================== 系统提示词（精简版） ====================
     SYSTEM_PROMPT = """你是一个智能图像生成助手，负责分析用户的自然语言描述，提取图像生成参数。
 
-## 支持的意图类型
+## 支持的意图类型（共 34 种）
 text_to_image, change_clothes, change_clothing_style, change_expression, change_hair,
 change_eye_color, change_face, change_skin_tone, change_body_type, change_age,
 change_gender, change_nationality, change_makeup, change_background, change_lighting,
@@ -954,7 +1002,6 @@ expand_to_full_body, old_photo_restore, chat
             "哭泣": "crying",
             "生气": "angry",
             "害羞": "blush",
-            "微笑": "smile",
             "微笑": "smile",
         }
         for cn, en in expressions.items():
@@ -1707,3 +1754,234 @@ expand_to_full_body, old_photo_restore, chat
 
     def __repr__(self):
         return f"<Chattoimage(version={self.version}, model={self.config.get('model')})>"
+
+
+# ==================== 直接运行入口 ====================
+
+def main():
+    """
+    直接运行技能的命令行入口
+    用法: python skills/chattoimage/skill.py --message "帮我换衣服" --image_path input.jpg
+    """
+    parser = argparse.ArgumentParser(
+        description="ChatToImage - 对话式图像生成技能",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  # 基本使用 - 文生图
+  python skills/chattoimage/skill.py --message "生成一个美丽的女孩"
+
+  # 换衣服（需要图片）
+  python skills/chattoimage/skill.py --message "把她的衣服换成红色裙子" --image_path input/girl.jpg
+
+  # 换背景
+  python skills/chattoimage/skill.py --message "把背景换成海滩" --image_path input/girl.jpg
+
+  # 加猫耳
+  python skills/chattoimage/skill.py --message "加猫耳" --image_path input/girl.jpg
+
+  # 风格转换
+  python skills/chattoimage/skill.py --message "转成油画风格" --image_path input/girl.jpg
+
+  # 指定 LLM 模型
+  python skills/chattoimage/skill.py --message "生成一个美丽的女孩" --model qwen2.5:14b
+
+  # 交互式对话模式
+  python skills/chattoimage/skill.py --interactive
+
+  # 列出所有支持的意图
+  python skills/chattoimage/skill.py --list-intents
+        """
+    )
+
+    parser.add_argument(
+        "--message", "-m",
+        type=str,
+        help="用户输入的自然语言描述"
+    )
+    parser.add_argument(
+        "--image_path", "-i",
+        type=str,
+        help="输入图片路径（用于图生图操作）"
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="LLM 模型名称 (默认: qwen2.5:7b)"
+    )
+    parser.add_argument(
+        "--api_type",
+        type=str,
+        choices=["ollama", "openai", "openai_compatible"],
+        default="ollama",
+        help="API 类型 (默认: ollama)"
+    )
+    parser.add_argument(
+        "--api_base",
+        type=str,
+        default="http://localhost:11434",
+        help="API 地址 (默认: http://localhost:11434)"
+    )
+    parser.add_argument(
+        "--api_key",
+        type=str,
+        default="",
+        help="API Key（OpenAI 等需要）"
+    )
+    parser.add_argument(
+        "--conversation_id", "-c",
+        type=str,
+        default="default",
+        help="会话 ID（用于多轮对话）"
+    )
+    parser.add_argument(
+        "--interactive", "-I",
+        action="store_true",
+        help="交互式对话模式"
+    )
+    parser.add_argument(
+        "--list-intents", "-l",
+        action="store_true",
+        help="列出所有支持的意图"
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="显示详细日志"
+    )
+    parser.add_argument(
+        "--output", "-o",
+        type=str,
+        default=None,
+        help="输出结果到文件 (JSON格式)"
+    )
+
+    args = parser.parse_args()
+
+    # 设置日志级别
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    # 列出所有意图
+    if args.list_intents:
+        print("\n" + "=" * 60)
+        print("📋 ChatToImage 支持的意图列表")
+        print("=" * 60)
+        print(f"{'意图类型':<25} {'描述':<20} {'必需参数':<20}")
+        print("-" * 60)
+        for intent, config in Chattoimage.INTENT_MAP.items():
+            required = ", ".join(config.get("required", []))
+            desc = config.get("description", "")
+            print(f"{intent:<25} {desc:<20} {required:<20}")
+        print("=" * 60)
+        print(f"共 {len(Chattoimage.INTENT_MAP)} 种意图")
+        return
+
+    # 交互式模式
+    if args.interactive:
+        print("\n" + "=" * 60)
+        print("💬 ChatToImage 交互式对话模式")
+        print("=" * 60)
+        print("输入 'exit' 或 'quit' 退出")
+        print("输入 'clear' 清除当前会话")
+        print("输入 'list' 查看所有意图")
+        print("-" * 60)
+
+        skill = Chattoimage(config={
+            "model": args.model or "qwen2.5:7b",
+            "api_type": args.api_type,
+            "api_base": args.api_base,
+            "api_key": args.api_key
+        })
+
+        conversation_id = args.conversation_id
+        current_image = args.image_path
+
+        while True:
+            try:
+                user_input = input("\n📝 你: ").strip()
+                if not user_input:
+                    continue
+
+                if user_input.lower() in ["exit", "quit", "q"]:
+                    print("👋 再见！")
+                    break
+
+                if user_input.lower() == "clear":
+                    skill.clear_conversation(conversation_id)
+                    print("🗑️ 会话已清除")
+                    continue
+
+                if user_input.lower() == "list":
+                    print("\n支持的意图:")
+                    for intent, config in Chattoimage.INTENT_MAP.items():
+                        print(f"  - {intent}: {config.get('description', '')}")
+                    continue
+
+                # 执行
+                result = skill.execute(
+                    message=user_input,
+                    image_path=current_image,
+                    conversation_id=conversation_id
+                )
+
+                if result.get("status") == "success":
+                    print(f"\n🤖 AI: {result.get('response', '')}")
+                    if result.get("image_paths"):
+                        print(f"📁 图片: {', '.join(result['image_paths'])}")
+                    print(f"📊 意图: {result.get('intent')} | 技能: {result.get('skill_used')}")
+                else:
+                    print(f"\n❌ 错误: {result.get('error', '未知错误')}")
+
+            except KeyboardInterrupt:
+                print("\n👋 再见！")
+                break
+            except Exception as e:
+                print(f"\n❌ 异常: {e}")
+
+        return
+
+    # 单次执行模式
+    if not args.message:
+        print("❌ 请指定 --message 参数，或使用 --interactive 进入交互模式")
+        print("   使用 --help 查看帮助")
+        sys.exit(1)
+
+    skill = Chattoimage(config={
+        "model": args.model or "qwen2.5:7b",
+        "api_type": args.api_type,
+        "api_base": args.api_base,
+        "api_key": args.api_key
+    })
+
+    result = skill.execute(
+        message=args.message,
+        image_path=args.image_path,
+        conversation_id=args.conversation_id
+    )
+
+    # 输出结果
+    if args.output:
+        with open(args.output, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+        print(f"✅ 结果已保存到: {args.output}")
+
+    if result.get("status") == "success":
+        print(f"\n✅ {result.get('response', '')}")
+        if result.get("image_paths"):
+            print(f"📁 图片: {', '.join(result['image_paths'])}")
+        if args.verbose:
+            print(f"\n📊 详情:")
+            print(f"   意图: {result.get('intent')}")
+            print(f"   技能: {result.get('skill_used')}")
+            print(f"   参数: {json.dumps(result.get('params', {}), ensure_ascii=False, indent=2)}")
+    else:
+        print(f"\n❌ 错误: {result.get('error', '未知错误')}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

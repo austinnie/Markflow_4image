@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-特殊内容文生图批量生成器
-支持：卧室裸露/内衣、海滩、工作室、泳池、浴室、油画、雕塑等
+特殊内容文生图/图生图批量生成器（增强版）
+支持自定义提示词、参数、输入图片
 
 用法：
-  python scripts/generate_special.py --list                    # 列出所有模板
-  python scripts/generate_special.py --template bedroom_nude   # 生成指定模板
-  python scripts/generate_special.py --all                    # 生成所有模板
-  python scripts/generate_special.py --batch 5                # 批量生成多张
-  python scripts/generate_special.py --seed 42                # 固定种子
+  python scripts/generate_special.py --list                           # 列出所有模板
+  python scripts/generate_special.py --template bedroom_nude         # 生成指定模板
+  python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg  # 图生图
+  python scripts/generate_special.py --template bedroom_nude --prompt "自定义提示词" --steps 40
+  python scripts/generate_special.py --all                           # 生成所有模板
+  python scripts/generate_special.py --batch 5 --template studio_nude # 批量生成5张
 """
 
 import sys
@@ -20,7 +21,7 @@ import time
 import random
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 # 添加项目根目录
 project_root = Path(__file__).parent.parent
@@ -161,7 +162,7 @@ def get_sd_config():
 
 
 class SpecialGenerator:
-    """特殊内容文生图生成器"""
+    """特殊内容生成器（增强版）"""
     
     def __init__(self, output_dir: str = "./output/special"):
         self.output_dir = Path(output_dir)
@@ -189,21 +190,45 @@ class SpecialGenerator:
         for cat, items in categories.items():
             print(f"\n【{cat}】")
             for key, template in items:
-                print(f"  {key:<30} {template['name']}")
+                params = template.get('params', {})
+                steps = params.get('steps', 30)
+                cfg = params.get('cfg_scale', 7.0)
+                print(f"  {key:<30} {template['name']:<20} (steps={steps}, cfg={cfg})")
         
         print("\n" + "=" * 70)
         print(f"共 {len(TEMPLATES)} 个模板")
+        print("\n💡 使用: --template <模板名>")
+        print("   python scripts/generate_special.py --template bedroom_nude")
+        print("   python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg")
     
-    def generate_one(self, template_key: str, seed: int = None, batch_size: int = 1) -> Dict:
-        """生成单个模板"""
+    def generate_one(self, template_key: str, 
+                     image_path: str = None,
+                     custom_prompt: str = None,
+                     custom_negative: str = None,
+                     steps: int = None,
+                     cfg_scale: float = None,
+                     strength: float = None,
+                     width: int = None,
+                     height: int = None,
+                     seed: int = None,
+                     batch_size: int = 1) -> Dict:
+        """
+        生成单个模板（支持自定义参数覆盖）
+        """
         if template_key not in TEMPLATES:
             return {"status": "error", "error": f"未知模板: {template_key}"}
         
         template = TEMPLATES[template_key]
         params = template.get("params", {})
         
-        prompt = template["prompt"]
-        negative = template.get("negative", "")
+        # 使用自定义参数或模板默认值
+        prompt = custom_prompt if custom_prompt else template["prompt"]
+        negative = custom_negative if custom_negative else template.get("negative", "")
+        steps = steps if steps is not None else params.get("steps", self.sd_config.get("default_steps", 25))
+        cfg_scale = cfg_scale if cfg_scale is not None else params.get("cfg_scale", self.sd_config.get("default_cfg", 7.5))
+        width = width if width is not None else params.get("width", 512)
+        height = height if height is not None else params.get("height", 768)
+        strength = strength if strength is not None else 0.55
         
         # 处理种子
         if seed is None or seed == -1:
@@ -211,16 +236,16 @@ class SpecialGenerator:
         
         # 获取模型配置
         model_name = self.sd_config.get("model_name")
-        steps = params.get("steps", self.sd_config.get("default_steps", 25))
-        cfg_scale = params.get("cfg_scale", self.sd_config.get("default_cfg", 7.5))
-        width = params.get("width", 512)
-        height = params.get("height", 768)
         
         print(f"\n{'='*60}")
         print(f"🎨 生成: {template['name']}")
         print(f"📝 模板: {template_key}")
+        if image_path:
+            print(f"📷 输入图片: {image_path}")
         print(f"📐 尺寸: {width}x{height}")
         print(f"⚙️  步数: {steps}, CFG: {cfg_scale}")
+        if strength is not None:
+            print(f"💪 强度: {strength}")
         print(f"🌱 种子: {seed}")
         print(f"📦 模型: {model_name}")
         print('='*60)
@@ -230,20 +255,27 @@ class SpecialGenerator:
         filename = f"{timestamp}_{template_key}_{seed}.png"
         output_path = str(self.output_dir / filename)
         
+        # 构建参数
+        skill_params = {
+            "prompt": prompt,
+            "negative_prompt": negative,
+            "model_name": model_name,
+            "width": width,
+            "height": height,
+            "steps": steps,
+            "cfg_scale": cfg_scale,
+            "seed": seed,
+            "batch_size": batch_size,
+            "output_path": output_path
+        }
+        
+        # 如果有输入图片，添加图生图参数
+        if image_path:
+            skill_params["image_path"] = image_path
+            skill_params["strength"] = strength
+        
         try:
-            result = execute_skill(
-                "sd_image_generator",
-                prompt=prompt,
-                negative_prompt=negative,
-                model_name=model_name,
-                width=width,
-                height=height,
-                steps=steps,
-                cfg_scale=cfg_scale,
-                seed=seed,
-                batch_size=batch_size,
-                output_path=output_path
-            )
+            result = execute_skill("sd_image_generator", **skill_params)
             
             if isinstance(result, dict) and result.get('status') == 'success':
                 image_paths = result.get('image_paths', [output_path])
@@ -268,7 +300,7 @@ class SpecialGenerator:
             traceback.print_exc()
             return {"status": "error", "error": str(e), "template": template_key}
     
-    def generate_all(self, seed: int = None):
+    def generate_all(self, **kwargs):
         """生成所有模板"""
         print(f"\n{'='*60}")
         print(f"🚀 生成所有模板 (共 {len(TEMPLATES)} 个)")
@@ -278,11 +310,11 @@ class SpecialGenerator:
         success_count = 0
         
         for key in TEMPLATES:
-            result = self.generate_one(key, seed)
+            result = self.generate_one(key, **kwargs)
             results.append(result)
             if result.get('status') == 'success':
                 success_count += 1
-            time.sleep(1)  # 避免API限制
+            time.sleep(1)
         
         print(f"\n{'='*60}")
         print(f"📊 完成! 成功: {success_count}/{len(TEMPLATES)}")
@@ -290,7 +322,7 @@ class SpecialGenerator:
         
         return results
     
-    def generate_batch(self, template_key: str, count: int = 5, seed: int = None):
+    def generate_batch(self, template_key: str, count: int = 5, **kwargs):
         """批量生成同一模板多张"""
         print(f"\n{'='*60}")
         print(f"🚀 批量生成: {TEMPLATES[template_key]['name']}")
@@ -300,11 +332,15 @@ class SpecialGenerator:
         results = []
         success_count = 0
         
+        # 如果指定了种子，递增使用
+        base_seed = kwargs.get('seed')
+        
         for i in range(count):
             print(f"\n--- [{i+1}/{count}] ---")
-            # 每个种子不同
-            current_seed = seed + i if seed is not None else None
-            result = self.generate_one(template_key, current_seed)
+            current_kwargs = kwargs.copy()
+            if base_seed is not None:
+                current_kwargs['seed'] = base_seed + i
+            result = self.generate_one(template_key, **current_kwargs)
             results.append(result)
             if result.get('status') == 'success':
                 success_count += 1
@@ -319,23 +355,52 @@ class SpecialGenerator:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="特殊内容文生图批量生成器",
+        description="特殊内容生成器（支持自定义参数和输入图片）",
         epilog="""
 示例:
-  python scripts/generate_special.py --list                           # 列出所有模板
-  python scripts/generate_special.py --template bedroom_nude         # 生成卧室裸露
-  python scripts/generate_special.py --template bedroom_nude --seed 42 # 固定种子
-  python scripts/generate_special.py --all                           # 生成所有模板
-  python scripts/generate_special.py --batch 5 --template studio_nude # 批量生成5张
+  # 列出所有模板
+  python scripts/generate_special.py --list
+
+  # 生成卧室裸露（文生图）
+  python scripts/generate_special.py --template bedroom_nude
+
+  # 图生图 - 指定输入图片
+  python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg
+
+  # 自定义提示词和参数
+  python scripts/generate_special.py --template bedroom_nude --prompt "自定义提示词" --steps 40 --cfg 8.0
+
+  # 批量生成5张
+  python scripts/generate_special.py --template bedroom_nude --batch 5
+
+  # 批量生成 + 图生图
+  python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg --batch 5 --strength 0.6
+
+  # 生成所有模板
+  python scripts/generate_special.py --all
+
+  # 生成所有模板 + 图生图
+  python scripts/generate_special.py --all --image_path input/girl.jpg
         """
     )
     
+    # 基本参数
     parser.add_argument("--list", "-l", action="store_true", help="列出所有模板")
     parser.add_argument("--template", "-t", type=str, help="指定模板名称")
     parser.add_argument("--all", "-a", action="store_true", help="生成所有模板")
     parser.add_argument("--batch", "-b", type=int, default=1, help="批量生成数量")
-    parser.add_argument("--seed", "-s", type=int, default=-1, help="随机种子")
     parser.add_argument("--output", "-o", type=str, default="./output/special", help="输出目录")
+    
+    # ========== 新增：自定义参数 ==========
+    parser.add_argument("--image_path", "-i", type=str, help="输入图片路径（图生图模式）")
+    parser.add_argument("--prompt", "-p", type=str, help="自定义提示词（覆盖模板）")
+    parser.add_argument("--negative", "-n", type=str, help="自定义负向提示词")
+    parser.add_argument("--steps", "-s", type=int, help="迭代步数")
+    parser.add_argument("--cfg_scale", "-c", type=float, help="CFG Scale")
+    parser.add_argument("--strength", "-r", type=float, help="重绘强度 (0-1)")
+    parser.add_argument("--width", type=int, help="输出宽度")
+    parser.add_argument("--height", type=int, help="输出高度")
+    parser.add_argument("--seed", type=int, default=-1, help="随机种子")
     
     args = parser.parse_args()
     
@@ -345,20 +410,42 @@ def main():
         generator.list_templates()
         return
     
+    # 构建 kwargs
+    kwargs = {}
+    if args.image_path:
+        kwargs['image_path'] = args.image_path
+    if args.prompt:
+        kwargs['custom_prompt'] = args.prompt
+    if args.negative:
+        kwargs['custom_negative'] = args.negative
+    if args.steps is not None:
+        kwargs['steps'] = args.steps
+    if args.cfg_scale is not None:
+        kwargs['cfg_scale'] = args.cfg_scale
+    if args.strength is not None:
+        kwargs['strength'] = args.strength
+    if args.width is not None:
+        kwargs['width'] = args.width
+    if args.height is not None:
+        kwargs['height'] = args.height
+    if args.seed is not None:
+        kwargs['seed'] = args.seed
+    
     if args.template:
         if args.template not in TEMPLATES:
             print(f"❌ 未知模板: {args.template}")
             print(f"💡 可用: {', '.join(TEMPLATES.keys())}")
+            print("   使用 --list 查看所有模板")
             return
         
         if args.batch > 1:
-            generator.generate_batch(args.template, args.batch, args.seed)
+            generator.generate_batch(args.template, args.batch, **kwargs)
         else:
-            generator.generate_one(args.template, args.seed)
+            generator.generate_one(args.template, **kwargs)
         return
     
     if args.all:
-        generator.generate_all(args.seed)
+        generator.generate_all(**kwargs)
         return
     
     # 默认显示帮助
