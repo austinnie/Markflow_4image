@@ -29,9 +29,9 @@ logger = logging.getLogger(__name__)
 class Chattoimage:
     """对话式图像生成技能"""
 
-    # ==================== 意图映射 ====================
+    # ==================== 意图映射（完整版） ====================
     INTENT_MAP = {
-        # 文生图
+        # ---- 文生图 ----
         "text_to_image": {
             "skill": "sd_image_generator",
             "params": {
@@ -47,7 +47,8 @@ class Chattoimage:
             },
             "required": ["prompt"]
         },
-        # 换装
+
+        # ---- 人物编辑 ----
         "change_clothes": {
             "skill": "change_clothes",
             "params": {
@@ -60,17 +61,16 @@ class Chattoimage:
             },
             "required": ["image_path", "prompt"]
         },
-        # 换背景
-        "change_background": {
-            "skill": "change_background",
+        "change_clothing_style": {
+            "skill": "change_clothing_style",
             "params": {
                 "image_path": "{image_path}",
-                "preset": "{preset}",
+                "style": "{style}",
+                "prompt": "{prompt}",
                 "strength": "{strength}"
             },
-            "required": ["image_path", "preset"]
+            "required": ["image_path", "style"]
         },
-        # 换表情
         "change_expression": {
             "skill": "change_expression",
             "params": {
@@ -80,18 +80,130 @@ class Chattoimage:
             },
             "required": ["image_path", "expression"]
         },
-        # 换发型/发色
         "change_hair": {
             "skill": "change_hair",
             "params": {
                 "image_path": "{image_path}",
                 "hair_color": "{hair_color}",
+                "hairstyle": "{hairstyle}",
                 "prompt": "{prompt}",
                 "strength": "{strength}"
             },
             "required": ["image_path"]
         },
-        # 加眼镜
+        "change_eye_color": {
+            "skill": "change_eye_color",
+            "params": {
+                "image_path": "{image_path}",
+                "color": "{color}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "color"]
+        },
+        "change_face": {
+            "skill": "change_face",
+            "params": {
+                "image_path": "{image_path}",
+                "face_prompt": "{face_prompt}",
+                "prompt": "{prompt}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "face_prompt"]
+        },
+        "change_skin_tone": {
+            "skill": "change_skin_tone",
+            "params": {
+                "image_path": "{image_path}",
+                "tone": "{tone}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "tone"]
+        },
+        "change_body_type": {
+            "skill": "change_body_type",
+            "params": {
+                "image_path": "{image_path}",
+                "body_type": "{body_type}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "body_type"]
+        },
+        "change_age": {
+            "skill": "change_age",
+            "params": {
+                "image_path": "{image_path}",
+                "age": "{age}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "age"]
+        },
+        "change_gender": {
+            "skill": "change_gender",
+            "params": {
+                "image_path": "{image_path}",
+                "direction": "{direction}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "direction"]
+        },
+        "change_nationality": {
+            "skill": "change_nationality",
+            "params": {
+                "image_path": "{image_path}",
+                "ethnicity": "{ethnicity}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "ethnicity"]
+        },
+        "change_makeup": {
+            "skill": "change_makeup",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "style"]
+        },
+
+        # ---- 场景/背景编辑 ----
+        "change_background": {
+            "skill": "change_background",
+            "params": {
+                "image_path": "{image_path}",
+                "preset": "{preset}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "preset"]
+        },
+        "change_lighting": {
+            "skill": "change_lighting",
+            "params": {
+                "image_path": "{image_path}",
+                "lighting": "{lighting}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "lighting"]
+        },
+        "change_perspective": {
+            "skill": "change_perspective",
+            "params": {
+                "image_path": "{image_path}",
+                "perspective": "{perspective}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "perspective"]
+        },
+        "change_furniture": {
+            "skill": "change_furniture",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "style"]
+        },
+
+        # ---- 添加元素 ----
         "add_glasses": {
             "skill": "add_glasses",
             "params": {
@@ -101,7 +213,6 @@ class Chattoimage:
             },
             "required": ["image_path"]
         },
-        # 加兽耳
         "add_animal_ears": {
             "skill": "add_animal_ears",
             "params": {
@@ -111,7 +222,26 @@ class Chattoimage:
             },
             "required": ["image_path", "animal"]
         },
-        # 风格转换
+        "add_tattoo": {
+            "skill": "add_tattoo",
+            "params": {
+                "image_path": "{image_path}",
+                "tattoo": "{tattoo}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "tattoo"]
+        },
+        "add_background_objects": {
+            "skill": "add_background_objects",
+            "params": {
+                "image_path": "{image_path}",
+                "object": "{object}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "object"]
+        },
+
+        # ---- 风格转换 ----
         "style_transfer": {
             "skill": "style_transfer",
             "params": {
@@ -121,7 +251,6 @@ class Chattoimage:
             },
             "required": ["image_path", "style"]
         },
-        # 二次元转写实
         "anime_to_real": {
             "skill": "anime_to_real",
             "params": {
@@ -131,7 +260,129 @@ class Chattoimage:
             },
             "required": ["image_path"]
         },
-        # 全身扩展
+        "real_to_anime": {
+            "skill": "real_to_anime",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path"]
+        },
+        "sketch_to_real": {
+            "skill": "sketch_to_real",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path"]
+        },
+        "colorize_sketch": {
+            "skill": "colorize_sketch",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path"]
+        },
+
+        # ---- 天气/季节/昼夜转换 ----
+        "weather_transfer": {
+            "skill": "weather_transfer",
+            "params": {
+                "image_path": "{image_path}",
+                "weather": "{weather}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "weather"]
+        },
+        "season_transfer": {
+            "skill": "season_transfer",
+            "params": {
+                "image_path": "{image_path}",
+                "season": "{season}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "season"]
+        },
+        "day_night_transfer": {
+            "skill": "day_night_transfer",
+            "params": {
+                "image_path": "{image_path}",
+                "mode": "{mode}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "mode"]
+        },
+
+        # ---- 移除/替换 ----
+        "remove_clothes": {
+            "skill": "remove_clothes",
+            "params": {
+                "image_path": "{image_path}",
+                "prompt": "{prompt}",
+                "negative_prompt": "{negative_prompt}",
+                "strength": "{strength}",
+                "steps": "{steps}",
+                "device": "cpu"
+            },
+            "required": ["image_path"]
+        },
+        "remove_object": {
+            "skill": "remove_object",
+            "params": {
+                "image_path": "{image_path}",
+                "skip_manual": "{skip_manual}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path"]
+        },
+        "replace_object": {
+            "skill": "replace_object",
+            "params": {
+                "image_path": "{image_path}",
+                "object_prompt": "{object_prompt}",
+                "skip_manual": "{skip_manual}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "object_prompt"]
+        },
+
+        # ---- 生成类 ----
+        "fantasy_character": {
+            "skill": "fantasy_character",
+            "params": {
+                "image_path": "{image_path}",
+                "fantasy_type": "{fantasy_type}",
+                "prompt": "{prompt}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path", "fantasy_type"]
+        },
+        "mecha_generator": {
+            "skill": "mecha_generator",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "prompt": "{prompt}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path"]
+        },
+        "human_to_robot": {
+            "skill": "human_to_robot",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "prompt": "{prompt}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path"]
+        },
+
+        # ---- 扩展 ----
         "expand_to_full_body": {
             "skill": "expand_to_full_body",
             "params": {
@@ -140,7 +391,18 @@ class Chattoimage:
                 "controlnet_type": "openpose"
             },
             "required": ["image_path"]
-        }
+        },
+
+        # ---- 修复 ----
+        "old_photo_restore": {
+            "skill": "old_photo_restore",
+            "params": {
+                "image_path": "{image_path}",
+                "style": "{style}",
+                "strength": "{strength}"
+            },
+            "required": ["image_path"]
+        },
     }
 
     # ==================== 默认配置 ====================
@@ -160,35 +422,45 @@ class Chattoimage:
         "auto_save_context": True
     }
 
-    # ==================== 系统提示词 ====================
+    # ==================== 系统提示词（精简版） ====================
     SYSTEM_PROMPT = """你是一个智能图像生成助手，负责分析用户的自然语言描述，提取图像生成参数。
 
-你需要判断用户的意图并提取关键信息：
-
 ## 支持的意图类型
-1. text_to_image - 文生图：用户想要生成一张全新的图片
-2. change_clothes - 换装：用户想给图片中的人物换衣服
-3. change_background - 换背景：用户想换图片背景
-4. change_expression - 换表情：用户想改人物表情
-5. change_hair - 换发型/发色：用户想改发型或发色
-6. add_glasses - 加眼镜：用户想给人物加眼镜
-7. add_animal_ears - 加兽耳：用户想加动物耳朵
-8. style_transfer - 风格转换：用户想改变图片风格
-9. anime_to_real - 二次元转写实
-10. expand_to_full_body - 扩展为全身图
-11. chat - 普通对话
+text_to_image, change_clothes, change_clothing_style, change_expression, change_hair,
+change_eye_color, change_face, change_skin_tone, change_body_type, change_age,
+change_gender, change_nationality, change_makeup, change_background, change_lighting,
+change_perspective, change_furniture, add_glasses, add_animal_ears, add_tattoo,
+add_background_objects, style_transfer, anime_to_real, real_to_anime, sketch_to_real,
+colorize_sketch, weather_transfer, season_transfer, day_night_transfer, remove_clothes,
+remove_object, replace_object, fantasy_character, mecha_generator, human_to_robot,
+expand_to_full_body, old_photo_restore, chat
 
 ## 输出格式
-请输出 JSON 格式：
 {
     "intent": "意图类型",
     "prompt": "提取/优化的提示词",
     "params": {
-        "preset": "背景预设名（change_background需要）",
-        "expression": "表情（change_expression需要）",
-        "hair_color": "发色（change_hair需要）",
-        "style": "风格（style_transfer/add_glasses需要）",
-        "animal": "动物（add_animal_ears需要）",
+        "preset": "背景预设",
+        "expression": "表情",
+        "hair_color": "发色",
+        "style": "风格",
+        "animal": "动物",
+        "color": "颜色",
+        "tone": "肤色",
+        "body_type": "体型",
+        "age": "年龄",
+        "direction": "性别转换方向",
+        "ethnicity": "种族",
+        "lighting": "光照",
+        "perspective": "视角",
+        "weather": "天气",
+        "season": "季节",
+        "mode": "昼夜模式",
+        "fantasy_type": "幻想角色类型",
+        "tattoo": "纹身图案",
+        "object": "背景物体",
+        "object_prompt": "替换物体描述",
+        "face_prompt": "面部描述",
         "strength": 0.55,
         "width": 512,
         "height": 768,
@@ -199,20 +471,44 @@ class Chattoimage:
     "reply": "给用户的友好回复"
 }
 
-## 注意事项
-- 如果用户没有明确指定意图，根据上下文推断
-- 提取主体、场景、风格、颜色等关键信息
-- prompt 应该是完整的英文描述
-- 对中文输入，输出时转换为英文提示词
-- 如果是对话，设置 intent 为 "chat"
-- 如果用户说"换衣服"、"换装"、"穿裙子"等，判断为 change_clothes
-- 如果用户说"换背景"、"换个场景"等，判断为 change_background
-- 如果用户说"换表情"、"开心点"、"笑"等，判断为 change_expression
-- 如果用户说"换发型"、"染发"、"粉色头发"等，判断为 change_hair
-- 如果用户说"加眼镜"、"戴眼镜"等，判断为 add_glasses
-- 如果用户说"加猫耳"、"加兔耳"等，判断为 add_animal_ears
-- 如果用户说"转油画"、"水彩风格"等，判断为 style_transfer
-- 如果用户说"二次元转写实"等，判断为 anime_to_real"""
+## 关键词映射
+- 换衣服/换装/穿裙子/穿裤子 → change_clothes
+- 换服装风格/换风格 → change_clothing_style
+- 换背景/换个场景 → change_background
+- 换表情/笑/开心/难过/惊讶/生气 → change_expression
+- 换发型/染发/头发颜色 → change_hair
+- 换眼睛颜色/眼睛颜色 → change_eye_color
+- 换脸/面部重绘 → change_face
+- 换肤色/皮肤颜色 → change_skin_tone
+- 换体型/变瘦/变胖/变壮 → change_body_type
+- 变年轻/变老/改年龄 → change_age
+- 变性/男变女/女变男 → change_gender
+- 换国籍/换人种 → change_nationality
+- 换妆容/化妆 → change_makeup
+- 换光照/换光线 → change_lighting
+- 换视角/换角度 → change_perspective
+- 换家具风格 → change_furniture
+- 加眼镜/戴眼镜 → add_glasses
+- 加猫耳/兔耳/兽耳 → add_animal_ears
+- 加纹身 → add_tattoo
+- 加背景物体/加花/加树 → add_background_objects
+- 风格转换/油画/水彩/漫画 → style_transfer
+- 动漫转写实/二次元转真人 → anime_to_real
+- 写实转动漫 → real_to_anime
+- 素描转写实 → sketch_to_real
+- 线稿上色 → colorize_sketch
+- 换天气/晴天/雨天/雪天 → weather_transfer
+- 换季节/春天/夏天/秋天/冬天 → season_transfer
+- 昼夜转换/白天转黑夜 → day_night_transfer
+- 去衣/脱衣服 → remove_clothes
+- 移除物体/去掉 → remove_object
+- 替换物体/换成 → replace_object
+- 幻想角色/精灵/矮人/兽人 → fantasy_character
+- 机甲/机器人 → mecha_generator
+- 人转机器人/变机器人 → human_to_robot
+- 全身/扩展为全身 → expand_to_full_body
+- 修复照片/老照片 → old_photo_restore
+- 生成/画/创建 → text_to_image"""
 
     def __init__(self, config: Dict[str, Any] = None):
         """初始化技能"""
@@ -419,63 +715,156 @@ class Chattoimage:
 
     def _fallback_analyze(self, message: str) -> Dict[str, Any]:
         """
-        回退意图分析（基于关键词匹配）
+        回退意图分析（基于关键词匹配）- 增强版
         """
         msg_lower = message.lower()
 
-        # 意图判断
-        if any(k in msg_lower for k in ["换衣服", "换装", "穿裙子", "换裙子", "换裤子", "换上衣", "换外套"]):
-            intent = "change_clothes"
-            prompt = self._extract_clothes_prompt(message)
-        elif any(k in msg_lower for k in ["换背景", "换场景", "背景换成", "场景换成"]):
-            intent = "change_background"
-            preset = self._extract_preset(message)
-        elif any(k in msg_lower for k in ["换表情", "表情换成", "笑", "开心", "难过", "惊讶", "生气"]):
-            intent = "change_expression"
-            expression = self._extract_expression(message)
-        elif any(k in msg_lower for k in ["换发型", "染发", "头发", "发色", "粉色头发", "金色头发"]):
-            intent = "change_hair"
-            hair_color = self._extract_hair_color(message)
-        elif any(k in msg_lower for k in ["加眼镜", "戴眼镜", "眼镜"]):
-            intent = "add_glasses"
-            style = self._extract_glasses_style(message)
-        elif any(k in msg_lower for k in ["加猫耳", "猫耳", "兔耳", "兽耳"]):
-            intent = "add_animal_ears"
-            animal = self._extract_animal(message)
-        elif any(k in msg_lower for k in ["风格转换", "转成", "油画", "水彩", "漫画"]):
-            intent = "style_transfer"
-            style = self._extract_style_name(message)
-        elif any(k in msg_lower for k in ["二次元转写实", "动漫转真人", "卡通转真实"]):
-            intent = "anime_to_real"
-        elif any(k in msg_lower for k in ["全身", "扩展为全身"]):
-            intent = "expand_to_full_body"
-        elif any(k in msg_lower for k in ["生成", "画", "创建", "create"]):
-            intent = "text_to_image"
-        else:
-            intent = "chat"
+        # 意图判断（按优先级排序）
+        intent_map = {
+            # 移除/替换
+            "remove_object": ["移除物体", "去掉", "删除", "remove"],
+            "replace_object": ["替换成", "换成", "replace"],
+            "remove_clothes": ["去衣", "脱衣服", "裸体", "nude", "naked", "without clothes"],
+
+            # 生成类
+            "fantasy_character": ["精灵", "矮人", "兽人", "妖精", "天使", "恶魔", "fantasy"],
+            "mecha_generator": ["机甲", "机器人", "mecha"],
+            "human_to_robot": ["变机器人", "人转机器人", "human to robot"],
+
+            # 人物编辑
+            "change_clothes": ["换衣服", "换装", "穿裙子", "穿裤子", "换裙子", "换裤子", "换上衣", "换外套"],
+            "change_clothing_style": ["换服装风格", "换风格", "穿衣风格"],
+            "change_expression": ["换表情", "表情换成", "笑", "开心", "难过", "惊讶", "生气", "害羞"],
+            "change_hair": ["换发型", "染发", "头发", "发色", "粉色头发", "金色头发", "蓝色头发"],
+            "change_eye_color": ["眼睛颜色", "瞳色", "换眼睛", "眼睛换成"],
+            "change_face": ["换脸", "面部", "脸换成", "变脸"],
+            "change_skin_tone": ["肤色", "皮肤颜色", "换肤色", "变白", "变黑", "变黄"],
+            "change_body_type": ["体型", "变瘦", "变胖", "变壮", "身材", "body type"],
+            "change_age": ["变年轻", "变老", "年龄", "年轻", "年老"],
+            "change_gender": ["变性", "男变女", "女变男", "变性别", "性转"],
+            "change_nationality": ["换国籍", "换人种", "变白人", "变亚洲人", "变黑人"],
+            "change_makeup": ["化妆", "妆容", "换妆容"],
+
+            # 场景/背景
+            "change_background": ["换背景", "换场景", "背景换成", "场景换成"],
+            "change_lighting": ["换光照", "换光线", "光照", "灯光", "打光"],
+            "change_perspective": ["换视角", "换角度", "视角", "角度"],
+            "change_furniture": ["家具", "家具风格", "换家具"],
+
+            # 添加元素
+            "add_glasses": ["加眼镜", "戴眼镜", "眼镜"],
+            "add_animal_ears": ["加猫耳", "猫耳", "兔耳", "兽耳", "狐狸耳"],
+            "add_tattoo": ["纹身", "加纹身", "刺青"],
+            "add_background_objects": ["加花", "加树", "加云", "加鸟", "加蝴蝶", "加背景"],
+
+            # 风格转换
+            "style_transfer": ["风格转换", "转成", "油画", "水彩", "漫画", "素描", "水墨"],
+            "anime_to_real": ["二次元转写实", "动漫转真人", "卡通转真实", "anime to real"],
+            "real_to_anime": ["写实转动漫", "真人转动漫", "real to anime"],
+            "sketch_to_real": ["素描转写实", "线稿转真人"],
+            "colorize_sketch": ["线稿上色", "给线稿上色", "上色"],
+
+            # 天气/季节/昼夜
+            "weather_transfer": ["天气", "晴天", "雨天", "雪天", "多云", "暴风雨", "换天气"],
+            "season_transfer": ["季节", "春天", "夏天", "秋天", "冬天", "换季节"],
+            "day_night_transfer": ["白天转黑夜", "黑夜转白天", "昼夜", "夜晚", "day night"],
+
+            # 修复
+            "old_photo_restore": ["老照片", "修复照片", "修复老照片", "old photo"],
+
+            # 扩展
+            "expand_to_full_body": ["全身", "扩展为全身", "full body"],
+        }
+
+        intent = "text_to_image"  # 默认
+
+        for int_key, keywords in intent_map.items():
+            if any(k in msg_lower for k in keywords):
+                intent = int_key
+                break
+
+        # 提取参数
+        params = {}
+        preset = self._extract_preset(message)
+        if preset:
+            params["preset"] = preset
+
+        expression = self._extract_expression(message)
+        if expression:
+            params["expression"] = expression
+
+        hair_color = self._extract_hair_color(message)
+        if hair_color:
+            params["hair_color"] = hair_color
+
+        color = self._extract_color(message)
+        if color:
+            params["color"] = color
+
+        tone = self._extract_skin_tone(message)
+        if tone:
+            params["tone"] = tone
+
+        body_type = self._extract_body_type(message)
+        if body_type:
+            params["body_type"] = body_type
+
+        age = self._extract_age(message)
+        if age:
+            params["age"] = age
+
+        direction = self._extract_gender_direction(message)
+        if direction:
+            params["direction"] = direction
+
+        ethnicity = self._extract_ethnicity(message)
+        if ethnicity:
+            params["ethnicity"] = ethnicity
+
+        lighting = self._extract_lighting(message)
+        if lighting:
+            params["lighting"] = lighting
+
+        perspective = self._extract_perspective(message)
+        if perspective:
+            params["perspective"] = perspective
+
+        weather = self._extract_weather(message)
+        if weather:
+            params["weather"] = weather
+
+        season = self._extract_season(message)
+        if season:
+            params["season"] = season
+
+        mode = self._extract_daynight_mode(message)
+        if mode:
+            params["mode"] = mode
+
+        fantasy_type = self._extract_fantasy_type(message)
+        if fantasy_type:
+            params["fantasy_type"] = fantasy_type
+
+        tattoo = self._extract_tattoo(message)
+        if tattoo:
+            params["tattoo"] = tattoo
+
+        obj = self._extract_background_object(message)
+        if obj:
+            params["object"] = obj
+
+        style = self._extract_style_name(message)
+        if style:
+            params["style"] = style
 
         # 构建结果
         result = {
             "intent": intent,
             "prompt": message,
-            "params": {},
+            "params": params,
             "confidence": 0.6,
             "reply": f"我理解你想要{self._get_intent_desc(intent)}"
         }
-
-        # 填充参数
-        if intent == "change_background" and preset:
-            result["params"]["preset"] = preset
-        elif intent == "change_expression" and expression:
-            result["params"]["expression"] = expression
-        elif intent == "change_hair" and hair_color:
-            result["params"]["hair_color"] = hair_color
-        elif intent == "add_glasses" and style:
-            result["params"]["style"] = style
-        elif intent == "add_animal_ears" and animal:
-            result["params"]["animal"] = animal
-        elif intent == "style_transfer" and style:
-            result["params"]["style"] = style
 
         return result
 
@@ -484,23 +873,50 @@ class Chattoimage:
         descs = {
             "text_to_image": "生成图片",
             "change_clothes": "换衣服",
+            "change_clothing_style": "换服装风格",
             "change_background": "换背景",
             "change_expression": "换表情",
             "change_hair": "换发型/发色",
+            "change_eye_color": "换眼睛颜色",
+            "change_face": "换脸",
+            "change_skin_tone": "换肤色",
+            "change_body_type": "换体型",
+            "change_age": "改变年龄",
+            "change_gender": "改变性别",
+            "change_nationality": "改变国籍",
+            "change_makeup": "改变妆容",
+            "change_lighting": "改变光照",
+            "change_perspective": "改变视角",
+            "change_furniture": "改变家具风格",
             "add_glasses": "加眼镜",
             "add_animal_ears": "加兽耳",
+            "add_tattoo": "加纹身",
+            "add_background_objects": "加背景物体",
             "style_transfer": "风格转换",
             "anime_to_real": "二次元转写实",
+            "real_to_anime": "写实转动漫",
+            "sketch_to_real": "素描转写实",
+            "colorize_sketch": "线稿上色",
+            "weather_transfer": "天气转换",
+            "season_transfer": "季节转换",
+            "day_night_transfer": "昼夜转换",
+            "remove_clothes": "去衣",
+            "remove_object": "移除物体",
+            "replace_object": "替换物体",
+            "fantasy_character": "幻想角色生成",
+            "mecha_generator": "机甲生成",
+            "human_to_robot": "人转机器人",
             "expand_to_full_body": "扩展为全身图",
+            "old_photo_restore": "老照片修复",
             "chat": "对话"
         }
         return descs.get(intent, "处理")
 
-    # ==================== 参数提取（回退用） ====================
+    # ==================== 参数提取（回退用）- 增强版 ====================
 
     def _extract_clothes_prompt(self, message: str) -> str:
         """提取换装描述"""
-        for word in ["换衣服", "换装", "穿裙子", "穿裤子", "穿上", "换件"]:
+        for word in ["换衣服", "换装", "穿裙子", "穿裤子", "穿上", "换件", "换条", "换身"]:
             message = message.replace(word, "")
         return message.strip() or "换一套新衣服"
 
@@ -516,7 +932,11 @@ class Chattoimage:
             "雪": "snow",
             "星空": "starry_night",
             "花园": "garden",
-            "草原": "grassland"
+            "草原": "grassland",
+            "雨": "rain",
+            "夜景": "night",
+            "工作室": "studio",
+            "赛博朋克": "cyberpunk"
         }
         for cn, en in presets.items():
             if cn in message:
@@ -533,7 +953,9 @@ class Chattoimage:
             "难过": "sad",
             "哭泣": "crying",
             "生气": "angry",
-            "害羞": "blush"
+            "害羞": "blush",
+            "微笑": "smile",
+            "微笑": "smile",
         }
         for cn, en in expressions.items():
             if cn in message:
@@ -552,9 +974,262 @@ class Chattoimage:
             "红色": "red",
             "白色": "white",
             "银": "silver",
-            "灰": "grey"
+            "灰": "grey",
+            "橙色": "orange",
+            "绿色": "green",
+            "亚麻": "linen",
         }
         for cn, en in colors.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_color(self, message: str) -> str:
+        """提取颜色（用于眼睛颜色等）"""
+        colors = {
+            "蓝色": "blue",
+            "绿色": "green",
+            "棕色": "brown",
+            "黑色": "black",
+            "灰色": "grey",
+            "紫色": "purple",
+            "红色": "red",
+            "金色": "gold",
+            "琥珀色": "amber",
+            "异色瞳": "heterochromia",
+        }
+        for cn, en in colors.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_skin_tone(self, message: str) -> str:
+        """提取肤色"""
+        tones = {
+            "白": "light",
+            "浅": "light",
+            "自然": "natural",
+            "小麦": "tan",
+            "深": "dark",
+            "黑": "dark",
+            "古铜": "bronze",
+            "橄榄": "olive",
+        }
+        for cn, en in tones.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_body_type(self, message: str) -> str:
+        """提取体型"""
+        types = {
+            "瘦": "slim",
+            "苗条": "slim",
+            "纤细": "slim",
+            "丰满": "curvy",
+            "微胖": "curvy",
+            "肌肉": "muscular",
+            "壮": "muscular",
+            "运动": "athletic",
+            "健美": "athletic",
+            "胖": "plus_size",
+            "大码": "plus_size",
+        }
+        for cn, en in types.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_age(self, message: str) -> str:
+        """提取年龄"""
+        ages = {
+            "年轻": "young",
+            "青年": "young",
+            "少年": "young",
+            "儿童": "child",
+            "小孩": "child",
+            "中年": "middle-aged",
+            "老年": "old",
+            "年老": "old",
+            "老者": "old",
+        }
+        for cn, en in ages.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_gender_direction(self, message: str) -> str:
+        """提取性别转换方向"""
+        if "男变女" in message or "男生变女生" in message or "男性变女性" in message:
+            return "male_to_female"
+        if "女变男" in message or "女生变男生" in message or "女性变男性" in message:
+            return "female_to_male"
+        return ""
+
+    def _extract_ethnicity(self, message: str) -> str:
+        """提取种族"""
+        ethnicities = {
+            "白": "caucasian",
+            "欧洲": "caucasian",
+            "亚洲": "asian",
+            "东亚": "asian",
+            "中国": "asian",
+            "日本": "asian",
+            "韩国": "asian",
+            "非洲": "african",
+            "黑": "african",
+            "拉丁": "hispanic",
+            "中东": "middle_eastern",
+            "印度": "indian",
+        }
+        for cn, en in ethnicities.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_lighting(self, message: str) -> str:
+        """提取光照"""
+        lightings = {
+            "黄金时刻": "golden_hour",
+            "日落": "golden_hour",
+            "黄昏": "golden_hour",
+            "夜晚": "night",
+            "夜景": "night",
+            "工作室": "studio",
+            "影棚": "studio",
+            "柔和": "soft",
+            "软光": "soft",
+            "戏剧": "dramatic",
+            "强烈": "dramatic",
+            "暖": "warm",
+            "冷": "cool",
+            "自然光": "natural",
+        }
+        for cn, en in lightings.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_perspective(self, message: str) -> str:
+        """提取视角"""
+        perspectives = {
+            "俯视": "aerial",
+            "俯瞰": "aerial",
+            "鸟瞰": "bird_eye",
+            "低角度": "low_angle",
+            "仰视": "low_angle",
+            "高角度": "high_angle",
+            "俯视": "high_angle",
+            "特写": "close_up",
+            "近景": "close_up",
+            "广角": "wide",
+            "虫眼": "worm_eye",
+        }
+        for cn, en in perspectives.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_weather(self, message: str) -> str:
+        """提取天气"""
+        weathers = {
+            "晴": "sunny",
+            "太阳": "sunny",
+            "雨": "rainy",
+            "下雨": "rainy",
+            "雪": "snowy",
+            "下雪": "snowy",
+            "多云": "cloudy",
+            "阴天": "cloudy",
+            "雾": "foggy",
+            "大雾": "foggy",
+            "暴风雨": "stormy",
+            "风": "windy",
+        }
+        for cn, en in weathers.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_season(self, message: str) -> str:
+        """提取季节"""
+        seasons = {
+            "春": "spring",
+            "夏天": "summer",
+            "夏": "summer",
+            "秋": "autumn",
+            "冬天": "winter",
+            "冬": "winter",
+        }
+        for cn, en in seasons.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_daynight_mode(self, message: str) -> str:
+        """提取昼夜模式"""
+        if "白天转黑夜" in message or "白天转夜晚" in message or "日转夜" in message:
+            return "day_to_night"
+        if "黑夜转白天" in message or "夜晚转白天" in message or "夜转日" in message:
+            return "night_to_day"
+        return ""
+
+    def _extract_fantasy_type(self, message: str) -> str:
+        """提取幻想角色类型"""
+        types = {
+            "精灵": "elf",
+            "暗夜精灵": "dark_elf",
+            "高等精灵": "high_elf",
+            "矮人": "dwarf",
+            "兽人": "orc",
+            "妖精": "fairy",
+            "天使": "angel",
+            "恶魔": "demon",
+            "龙裔": "dragonborn",
+            "龙人": "dragonborn",
+            "半兽人": "half_orc",
+            "半精灵": "half_elf",
+        }
+        for cn, en in types.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_tattoo(self, message: str) -> str:
+        """提取纹身图案"""
+        tattoos = {
+            "龙": "dragon",
+            "花": "flower",
+            "玫瑰": "rose",
+            "星星": "star",
+            "部落": "tribal",
+            "骷髅": "skull",
+            "羽毛": "feather",
+            "几何": "geometric",
+            "蝴蝶": "butterfly",
+            "狼": "wolf",
+            "虎": "tiger",
+        }
+        for cn, en in tattoos.items():
+            if cn in message:
+                return en
+        return ""
+
+    def _extract_background_object(self, message: str) -> str:
+        """提取背景物体"""
+        objects = {
+            "花": "flowers",
+            "花朵": "flowers",
+            "树": "trees",
+            "云": "clouds",
+            "鸟": "birds",
+            "蝴蝶": "butterflies",
+            "星星": "stars",
+            "气球": "balloons",
+            "灯笼": "lanterns",
+            "雨滴": "raindrops",
+        }
+        for cn, en in objects.items():
             if cn in message:
                 return en
         return ""
@@ -566,7 +1241,10 @@ class Chattoimage:
             "方": "square",
             "猫": "cat_eye",
             "墨镜": "sunglasses",
-            "金丝": "gold_rim"
+            "金丝": "gold_rim",
+            "飞行员": "aviator",
+            "椭圆": "oval",
+            "无框": "rimless",
         }
         for cn, en in styles.items():
             if cn in message:
@@ -581,7 +1259,9 @@ class Chattoimage:
             "狐狸": "fox",
             "狗": "dog",
             "狼": "wolf",
-            "熊": "bear"
+            "熊": "bear",
+            "龙": "dragon",
+            "鹿": "deer",
         }
         for cn, en in animals.items():
             if cn in message:
@@ -597,12 +1277,16 @@ class Chattoimage:
             "素描": "sketch",
             "水墨": "ink_wash",
             "赛博朋克": "cyberpunk",
-            "暗黑": "dark"
+            "暗黑": "dark",
+            "写实": "photorealistic",
+            "电影": "cinematic",
+            "复古": "vintage",
+            "蒸汽波": "vaporwave",
         }
         for cn, en in styles.items():
             if cn in message:
                 return en
-        return "oil_painting"
+        return ""
 
     # ==================== 上下文管理 ====================
 
@@ -683,38 +1367,38 @@ class Chattoimage:
 
     def _call_skill(self, skill_name: str, params: Dict) -> Dict:
         """
-        调用子技能 - 模仿 execute_skill 的方式
+        调用子技能
         """
         import importlib
         import sys
         from pathlib import Path
-        
+
         # 确保项目根目录在 sys.path 中
         project_root = Path(__file__).parent.parent.parent
         if str(project_root) not in sys.path:
             sys.path.insert(0, str(project_root))
-        
+
         try:
             # 动态导入技能模块
             module = importlib.import_module(f"skills.{skill_name}.skill")
-            
+
             # 查找技能类（排除 SkillSpec）
             skill_class = None
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
-                if (isinstance(attr, type) and 
+                if (isinstance(attr, type) and
                     attr.__module__ == module.__name__ and
                     attr_name not in ['SkillSpec']):
                     skill_class = attr
                     break
-            
+
             if not skill_class:
                 raise ValueError(f"未找到技能类: {skill_name}")
-            
+
             # 实例化并执行
             skill = skill_class()
             result = skill.execute(**params)
-            
+
             # 统一返回格式
             if isinstance(result, dict):
                 if result.get('status') == 'success':
@@ -723,41 +1407,12 @@ class Chattoimage:
                     return {"status": "error", "error": result.get('error', '未知错误')}
             else:
                 return {"status": "success", "result": result}
-                
+
         except ImportError as e:
             logger.error(f"导入技能 {skill_name} 失败: {e}")
             return {"status": "error", "error": f"导入失败: {e}"}
         except Exception as e:
             logger.error(f"执行技能 {skill_name} 失败: {e}")
-            return {"status": "error", "error": str(e)}
-        
-    def _call_skill_direct(self, skill_name: str, params: Dict) -> Dict:
-        """
-        直接调用技能（不通过 Executor）
-        """
-        try:
-            # 动态导入技能模块
-            module_path = f"skills.{skill_name}.skill"
-            module = __import__(module_path, fromlist=[""])
-
-            # 查找模块中所有类，找到匹配的类
-            skill_class = None
-            for attr_name in dir(module):
-                attr = getattr(module, attr_name)
-                if (isinstance(attr, type) and
-                    attr.__module__ == module.__name__ and
-                    attr_name != 'SkillSpec'):
-                    skill_class = attr
-                    break
-
-            if not skill_class:
-                raise ValueError(f"未找到技能类: {skill_name}")
-
-            skill = skill_class()
-            result = skill.execute(**params)
-            return {"status": "success", "result": result}
-        except Exception as e:
-            logger.error(f"直接调用 {skill_name} 失败: {e}")
             return {"status": "error", "error": str(e)}
 
     def _prepare_params(self, intent_result: Dict, context: Dict) -> Dict:
@@ -808,6 +1463,8 @@ class Chattoimage:
                             var_value = ""
                         elif var_name == "seed":
                             var_value = -1
+                        elif var_name == "skip_manual":
+                            var_value = False
                         elif var_name == "prompt" and intent_result.get("prompt"):
                             var_value = intent_result["prompt"]
 
@@ -827,28 +1484,31 @@ class Chattoimage:
             if context.get("last_image"):
                 skill_params["image_path"] = context["last_image"]
 
-        # ✅ 在返回前转换类型
+        # 类型转换
         for key in ["steps", "width", "height", "seed"]:
             if key in skill_params and skill_params[key]:
                 try:
                     skill_params[key] = int(skill_params[key])
-                except:
+                except (ValueError, TypeError):
                     pass
-        
-        if "cfg_scale" in skill_params and skill_params["cfg_scale"]:
-            try:
-                skill_params["cfg_scale"] = float(skill_params["cfg_scale"])
-            except:
-                pass
-        
-        if "strength" in skill_params and skill_params["strength"]:
-            try:
-                skill_params["strength"] = float(skill_params["strength"])
-            except:
-                pass
+
+        for key in ["cfg_scale", "strength"]:
+            if key in skill_params and skill_params[key]:
+                try:
+                    skill_params[key] = float(skill_params[key])
+                except (ValueError, TypeError):
+                    pass
+
+        # 布尔值转换
+        for key in ["skip_manual", "use_controlnet", "save_mask"]:
+            if key in skill_params:
+                val = skill_params[key]
+                if isinstance(val, str):
+                    skill_params[key] = val.lower() in ["true", "1", "yes", "on"]
+                elif isinstance(val, (int, float)):
+                    skill_params[key] = bool(val)
 
         return skill_params
-
 
     # ==================== 主执行方法 ====================
 
