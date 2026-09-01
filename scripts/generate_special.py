@@ -1,16 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-特殊内容文生图/图生图批量生成器（增强版）
-支持自定义提示词、参数、输入图片
+特殊内容生成器（增强版 - 支持目录批量处理）
+支持自定义参数、输入图片、目录批量处理
 
 用法：
-  python scripts/generate_special.py --list                           # 列出所有模板
-  python scripts/generate_special.py --template bedroom_nude         # 生成指定模板
-  python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg  # 图生图
-  python scripts/generate_special.py --template bedroom_nude --prompt "自定义提示词" --steps 40
-  python scripts/generate_special.py --all                           # 生成所有模板
-  python scripts/generate_special.py --batch 5 --template studio_nude # 批量生成5张
+  # 处理单张图片
+  python scripts/generate_special.py --template bedroom_nude --image_path input/girl_01.jpg
+
+  # 处理整个目录（所有图片）
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/
+
+  # 处理目录 + 自定义参数
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/ --steps 40 --strength 0.6
+
+  # 处理目录 + 批量每张图生成多张
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/ --batch 3
+
+  # 处理目录 + 使用子目录作为输出
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/ --output output/special/bedroom
 """
 
 import sys
@@ -162,7 +170,10 @@ def get_sd_config():
 
 
 class SpecialGenerator:
-    """特殊内容生成器（增强版）"""
+    """特殊内容生成器（增强版 - 支持目录批量处理）"""
+    
+    # 支持的图片扩展名
+    IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'}
     
     def __init__(self, output_dir: str = "./output/special"):
         self.output_dir = Path(output_dir)
@@ -200,6 +211,27 @@ class SpecialGenerator:
         print("\n💡 使用: --template <模板名>")
         print("   python scripts/generate_special.py --template bedroom_nude")
         print("   python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg")
+        print("   python scripts/generate_special.py --template bedroom_nude --input_dir input/")
+    
+    def get_images_from_dir(self, dir_path: str) -> List[Path]:
+        """从目录获取所有图片"""
+        input_dir = Path(dir_path)
+        if not input_dir.exists():
+            print(f"❌ 目录不存在: {dir_path}")
+            return []
+        
+        if not input_dir.is_dir():
+            print(f"❌ 不是目录: {dir_path}")
+            return []
+        
+        images = []
+        for ext in self.IMAGE_EXTENSIONS:
+            images.extend(input_dir.glob(f"*{ext}"))
+            images.extend(input_dir.glob(f"*{ext.upper()}"))
+        
+        # 排序
+        images = sorted(set(images))
+        return images
     
     def generate_one(self, template_key: str, 
                      image_path: str = None,
@@ -211,7 +243,8 @@ class SpecialGenerator:
                      width: int = None,
                      height: int = None,
                      seed: int = None,
-                     batch_size: int = 1) -> Dict:
+                     batch_size: int = 1,
+                     output_filename: str = None) -> Dict:
         """
         生成单个模板（支持自定义参数覆盖）
         """
@@ -237,6 +270,15 @@ class SpecialGenerator:
         # 获取模型配置
         model_name = self.sd_config.get("model_name")
         
+        # 生成文件名
+        if output_filename:
+            output_path = str(self.output_dir / output_filename)
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            img_name = Path(image_path).stem if image_path else "text"
+            filename = f"{timestamp}_{template_key}_{img_name}_{seed}.png"
+            output_path = str(self.output_dir / filename)
+        
         print(f"\n{'='*60}")
         print(f"🎨 生成: {template['name']}")
         print(f"📝 模板: {template_key}")
@@ -249,11 +291,6 @@ class SpecialGenerator:
         print(f"🌱 种子: {seed}")
         print(f"📦 模型: {model_name}")
         print('='*60)
-        
-        # 生成文件名
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{timestamp}_{template_key}_{seed}.png"
-        output_path = str(self.output_dir / filename)
         
         # 构建参数
         skill_params = {
@@ -287,7 +324,8 @@ class SpecialGenerator:
                     "template": template_key,
                     "name": template['name'],
                     "image_paths": image_paths,
-                    "seed": seed
+                    "seed": seed,
+                    "input_image": image_path
                 }
             else:
                 error = result.get('error', '未知错误') if isinstance(result, dict) else str(result)
@@ -299,6 +337,59 @@ class SpecialGenerator:
             import traceback
             traceback.print_exc()
             return {"status": "error", "error": str(e), "template": template_key}
+    
+    def generate_directory(self, template_key: str, 
+                           input_dir: str,
+                           **kwargs) -> Dict:
+        """
+        处理目录中的所有图片
+        """
+        images = self.get_images_from_dir(input_dir)
+        
+        if not images:
+            print(f"❌ 在 {input_dir} 中未找到图片")
+            print(f"   支持的格式: {', '.join(self.IMAGE_EXTENSIONS)}")
+            return {"status": "error", "error": "未找到图片"}
+        
+        print(f"\n{'='*60}")
+        print(f"📁 目录批量处理: {input_dir}")
+        print(f"📊 找到 {len(images)} 张图片")
+        print(f"🎯 模板: {template_key} - {TEMPLATES[template_key]['name']}")
+        print('='*60)
+        
+        results = []
+        success_count = 0
+        
+        for idx, img_path in enumerate(images, 1):
+            print(f"\n📸 [{idx}/{len(images)}] 处理: {img_path.name}")
+            
+            # 为每张图片生成不同的输出文件名
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_filename = f"{timestamp}_{template_key}_{img_path.stem}.png"
+            
+            result = self.generate_one(
+                template_key,
+                image_path=str(img_path),
+                output_filename=output_filename,
+                **kwargs
+            )
+            results.append(result)
+            if result.get('status') == 'success':
+                success_count += 1
+            
+            # 每张图片之间稍作延迟
+            time.sleep(0.5)
+        
+        print(f"\n{'='*60}")
+        print(f"📊 完成! 成功: {success_count}/{len(images)}")
+        print('='*60)
+        
+        return {
+            "status": "success" if success_count == len(images) else "partial",
+            "total": len(images),
+            "success": success_count,
+            "results": results
+        }
     
     def generate_all(self, **kwargs):
         """生成所有模板"""
@@ -355,32 +446,36 @@ class SpecialGenerator:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="特殊内容生成器（支持自定义参数和输入图片）",
+        description="特殊内容生成器（支持目录批量处理）",
         epilog="""
 示例:
   # 列出所有模板
   python scripts/generate_special.py --list
 
-  # 生成卧室裸露（文生图）
+  # 文生图
   python scripts/generate_special.py --template bedroom_nude
 
-  # 图生图 - 指定输入图片
-  python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg
+  # 单张图生图
+  python scripts/generate_special.py --template bedroom_nude --image_path input/girl_01.jpg
 
-  # 自定义提示词和参数
-  python scripts/generate_special.py --template bedroom_nude --prompt "自定义提示词" --steps 40 --cfg 8.0
+  # ========== 目录批量处理（新功能） ==========
+  # 处理整个目录（所有图片）
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/
 
-  # 批量生成5张
-  python scripts/generate_special.py --template bedroom_nude --batch 5
+  # 处理目录 + 自定义参数
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/ --steps 40 --strength 0.6
 
-  # 批量生成 + 图生图
-  python scripts/generate_special.py --template bedroom_nude --image_path input/girl.jpg --batch 5 --strength 0.6
+  # 处理目录 + 每张图生成3张（不同种子）
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/ --batch 3
 
-  # 生成所有模板
-  python scripts/generate_special.py --all
+  # 处理目录 + 自定义输出目录
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/ --output output/special/bedroom
 
-  # 生成所有模板 + 图生图
-  python scripts/generate_special.py --all --image_path input/girl.jpg
+  # 处理目录 + 自定义提示词（所有图片使用相同提示词）
+  python scripts/generate_special.py --template bedroom_nude --input_dir input/ --prompt "自定义提示词"
+
+  # 生成所有模板 + 使用目录图片
+  python scripts/generate_special.py --all --input_dir input/
         """
     )
     
@@ -388,11 +483,14 @@ def main():
     parser.add_argument("--list", "-l", action="store_true", help="列出所有模板")
     parser.add_argument("--template", "-t", type=str, help="指定模板名称")
     parser.add_argument("--all", "-a", action="store_true", help="生成所有模板")
-    parser.add_argument("--batch", "-b", type=int, default=1, help="批量生成数量")
+    parser.add_argument("--batch", "-b", type=int, default=1, help="每张图片生成数量")
     parser.add_argument("--output", "-o", type=str, default="./output/special", help="输出目录")
     
-    # ========== 新增：自定义参数 ==========
-    parser.add_argument("--image_path", "-i", type=str, help="输入图片路径（图生图模式）")
+    # ========== 输入源（二选一） ==========
+    parser.add_argument("--image_path", "-i", type=str, help="输入单张图片路径")
+    parser.add_argument("--input_dir", "-d", type=str, help="输入目录路径（处理所有图片）")
+    
+    # ========== 自定义参数 ==========
     parser.add_argument("--prompt", "-p", type=str, help="自定义提示词（覆盖模板）")
     parser.add_argument("--negative", "-n", type=str, help="自定义负向提示词")
     parser.add_argument("--steps", "-s", type=int, help="迭代步数")
@@ -412,8 +510,6 @@ def main():
     
     # 构建 kwargs
     kwargs = {}
-    if args.image_path:
-        kwargs['image_path'] = args.image_path
     if args.prompt:
         kwargs['custom_prompt'] = args.prompt
     if args.negative:
@@ -430,22 +526,42 @@ def main():
         kwargs['height'] = args.height
     if args.seed is not None:
         kwargs['seed'] = args.seed
+    if args.batch > 1:
+        kwargs['batch_size'] = args.batch
     
-    if args.template:
-        if args.template not in TEMPLATES:
-            print(f"❌ 未知模板: {args.template}")
-            print(f"💡 可用: {', '.join(TEMPLATES.keys())}")
-            print("   使用 --list 查看所有模板")
-            return
-        
-        if args.batch > 1:
-            generator.generate_batch(args.template, args.batch, **kwargs)
-        else:
-            generator.generate_one(args.template, **kwargs)
+    # 检查模板是否存在
+    if args.template and args.template not in TEMPLATES:
+        print(f"❌ 未知模板: {args.template}")
+        print(f"💡 可用: {', '.join(TEMPLATES.keys())}")
+        print("   使用 --list 查看所有模板")
         return
     
+    # ========== 目录批量处理 ==========
+    if args.input_dir:
+        if not args.template:
+            print("❌ 目录模式需要指定 --template")
+            return
+        
+        generator.generate_directory(
+            args.template,
+            args.input_dir,
+            **kwargs
+        )
+        return
+    
+    # ========== 单张图片处理 ==========
+    if args.template:
+        if args.batch > 1:
+            generator.generate_batch(args.template, args.batch, 
+                                     image_path=args.image_path, **kwargs)
+        else:
+            generator.generate_one(args.template, 
+                                   image_path=args.image_path, **kwargs)
+        return
+    
+    # ========== 生成所有模板 ==========
     if args.all:
-        generator.generate_all(**kwargs)
+        generator.generate_all(image_path=args.image_path, **kwargs)
         return
     
     # 默认显示帮助
