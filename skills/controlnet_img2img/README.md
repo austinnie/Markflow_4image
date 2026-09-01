@@ -44,18 +44,43 @@ python -m markflow.cli.commands execute controlnet_img2img \
     output_path="./output/controlnet_result.png"
 ```
 
-### 2. 参数说明
+## 📋 参数说明
 
-| 参数名 | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `input_image_path` | `str` | 必填 | 原始图像路径 (输入图) |
-| `prompt` | `str` | `""` | 正向提示词 (决定二次重绘的内容方向) |
-| `negative_prompt` | `str` | `""` | 负向提示词 |
-| `preprocessor_type` | `str` | `"HED"` | 预处理器类型：`HED`, `Canny`, `MLSD`, `OpenPose` |
-| `controlnet_model` | `str` | `"canny"` | 底层模型类型：`canny`, `lineart`, `openpose`, `mlsd`, `hed` |
-| `strength` | `float` | `0.7` | 图生图重绘幅度（0~1）。越大改动越大，越小越保留原图细节。 |
-| `output_path` | `str` | `./output/controlnet_result.png` | 结果图像保存路径 |
+### 必填参数
 
+| 参数 | 类型 | 描述 |
+|------|------|------|
+| `input_image_path` | string | 输入图片路径 |
+| `prompt` | string | 正向提示词 |
+
+### 常用可选参数
+
+| 参数 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `negative_prompt` | string | "" | 负面提示词 |
+| `controlnet_type` | string | canny | canny/openpose/depth/hed/mlsd/lineart |
+| `strength` | float | 0.6 | 重绘强度 (0.0-1.0) |
+| `steps` | integer | 25 | 迭代步数 |
+| `cfg_scale` | float | 7.0 | 引导强度 |
+| `seed` | integer | -1 | 随机种子 |
+| `output_path` | string | 自动生成 | 输出路径 |
+| `width` | integer | 原图尺寸 | 输出宽度 |
+| `height` | integer | 原图尺寸 | 输出高度 |
+| `scheduler` | string | DDIM | DDIM/DPM/UniPC/Euler |
+| `model_name` | string | 默认 | 底模名称 |
+| `preset` | string | - | 预设模板 (beach/forest/city/...) |
+
+### 高级参数
+
+| 参数 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `controlnet_strength` | float | 1.0 | ControlNet 权重 |
+| `controlnet_guidance_start` | float | 0.0 | 起始步数比例 |
+| `controlnet_guidance_end` | float | 1.0 | 结束步数比例 |
+| `resize_mode` | string | crop | crop/fit/stretch |
+| `batch_size` | integer | 1 | 批次大小 |
+| `save_mask` | boolean | false | 保存遮罩 |
+| `lora_weights` | json | {} | LoRA 配置 |
 
 
 ## 🧠 底层逻辑说明

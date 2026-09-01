@@ -1,0 +1,218 @@
+{
+  "name": "controlnet_img2img",
+  "display_name": "ControlNet 图生图引擎",
+  "description": "通用 ControlNet 图生图底层引擎。支持 Canny、OpenPose、Depth、HED、MLSD、Lineart 等多种控制方式，是所有图生图技能的底层核心。",
+  "version": "2.0.0",
+  "tags": ["图生图", "ControlNet", "底层引擎", "保形重绘"],
+  "dependencies": ["torch", "diffusers", "transformers", "accelerate", "Pillow", "opencv-python", "controlnet-aux", "safetensors"],
+  "inputs": [
+    {
+      "name": "input_image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "prompt",
+      "type": "string",
+      "description": "正向提示词",
+      "required": true
+    },
+    {
+      "name": "negative_prompt",
+      "type": "string",
+      "description": "负面提示词",
+      "required": false,
+      "default": ""
+    },
+    {
+      "name": "preset",
+      "type": "string",
+      "description": "预设模板 (beach/forest/city/sakura/sunset/snow/rain/night/garden/mountain/studio/cyberpunk/elegant_dress/casual/sporty/traditional/futuristic/vintage/bohemian/formal/anime/realistic/oil_painting/watercolor/sketch/cinematic)",
+      "required": false
+    },
+    {
+      "name": "output_path",
+      "type": "string",
+      "description": "输出路径",
+      "required": false
+    },
+    {
+      "name": "output_dir",
+      "type": "string",
+      "description": "输出目录",
+      "required": false,
+      "default": "./output/controlnet_img2img"
+    },
+    {
+      "name": "filename_prefix",
+      "type": "string",
+      "description": "文件名前缀",
+      "required": false
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "description": "ControlNet 类型 (canny/openpose/depth/hed/mlsd/lineart)",
+      "required": false,
+      "default": "canny"
+    },
+    {
+      "name": "controlnet_strength",
+      "type": "float",
+      "description": "ControlNet 权重 (0.0-1.0)",
+      "required": false,
+      "default": 1.0
+    },
+    {
+      "name": "controlnet_guidance_start",
+      "type": "float",
+      "description": "ControlNet 起始步数比例",
+      "required": false,
+      "default": 0.0
+    },
+    {
+      "name": "controlnet_guidance_end",
+      "type": "float",
+      "description": "ControlNet 结束步数比例",
+      "required": false,
+      "default": 1.0
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "重绘强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.6
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 25
+    },
+    {
+      "name": "cfg_scale",
+      "type": "float",
+      "description": "提示词引导强度",
+      "required": false,
+      "default": 7.0
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子 (-1 表示随机)",
+      "required": false,
+      "default": -1
+    },
+    {
+      "name": "scheduler",
+      "type": "string",
+      "description": "采样器 (DDIM/DPM/UniPC/Euler/EulerAncestral)",
+      "required": false,
+      "default": "DDIM"
+    },
+    {
+      "name": "model_name",
+      "type": "string",
+      "description": "底模名称",
+      "required": false
+    },
+    {
+      "name": "model_type",
+      "type": "string",
+      "description": "模型类型 (sd15/sdxl)",
+      "required": false
+    },
+    {
+      "name": "lora_weights",
+      "type": "json",
+      "description": "LoRA 权重配置 {\"name\": weight}",
+      "required": false
+    },
+    {
+      "name": "width",
+      "type": "integer",
+      "description": "输出宽度",
+      "required": false
+    },
+    {
+      "name": "height",
+      "type": "integer",
+      "description": "输出高度",
+      "required": false
+    },
+    {
+      "name": "resize_mode",
+      "type": "string",
+      "description": "调整模式 (crop/fit/stretch)",
+      "required": false,
+      "default": "crop"
+    },
+    {
+      "name": "batch_size",
+      "type": "integer",
+      "description": "批次大小",
+      "required": false,
+      "default": 1
+    },
+    {
+      "name": "save_mask",
+      "type": "boolean",
+      "description": "是否保存遮罩",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "mask_blur",
+      "type": "integer",
+      "description": "遮罩模糊半径",
+      "required": false,
+      "default": 4
+    },
+    {
+      "name": "eta",
+      "type": "float",
+      "description": "DDIM eta 参数",
+      "required": false,
+      "default": 0.0
+    },
+    {
+      "name": "guidance_rescale",
+      "type": "float",
+      "description": "引导重缩放",
+      "required": false,
+      "default": 0.0
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "image_paths",
+      "description": "生成的图片路径列表"
+    },
+    {
+      "name": "params",
+      "description": "使用的参数"
+    },
+    {
+      "name": "metadata",
+      "description": "元数据信息"
+    }
+  ],
+  "config": {
+    "device": "cpu",
+    "output_dir": "./output/controlnet_img2img",
+    "default_steps": 25,
+    "default_cfg": 7.0,
+    "default_strength": 0.6,
+    "default_controlnet_type": "canny",
+    "default_scheduler": "DDIM",
+    "max_size": 768,
+    "align": 64
+  }
+}

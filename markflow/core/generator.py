@@ -338,7 +338,7 @@ class CodeGenerator:
         try:
             analysis_result = self._analyze_data(data, **kwargs)
             kwargs["analysis"] = analysis_result
-            logger.info(f"数据分析完成: {len(str(analysis_result))} 字符")
+            logger.info("数据分析完成: %s 字符" % len(str(analysis_result)))
         except Exception as e:
             logger.error(f"数据分析失败: {{e}}")
             raise

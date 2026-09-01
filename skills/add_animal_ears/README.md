@@ -1,13 +1,28 @@
 # add_animal_ears
 
-> add_animal_ears 技能
+> 为人物添加动物耳朵，支持猫耳、狗耳、狐耳、狼耳、兔耳、熊耳。使用 ControlNet 保持人物面部不变。
 
-## 概览
+## 描述
 
-- **文件数**: 1
-- **类数**: 1
-- **方法数**: 12
-- **函数数**: 2
+为人物添加动物耳朵，支持猫耳、狗耳、狐耳、狼耳、兔耳、熊耳。使用 ControlNet 保持人物面部不变。
+
+## 输入参数
+
+| 参数 | 类型 | 必填 | 默认值 | 描述 |
+|------|------|------|--------|------|
+| `image_path` | string | 是 |  | 输入图片路径 |
+| `animal` | string | 否 | cat | 动物类型 (cat/dog/fox/wolf/bunny/bear) |
+| `strength` | float | 否 | 0.55 | 变化强度 (0.0-1.0) |
+| `steps` | integer | 否 | 30 | 迭代步数 |
+| `seed` | integer | 否 | -1 | 随机种子 |
+
+## 输出
+
+| 字段 | 说明 |
+|------|------|
+| `output_path` | 生成的图片路径 |
+| `animal` | 应用的动物类型 |
+| `generation_time` | 生成耗时 |
 
 ## 使用方法
 
@@ -15,22 +30,13 @@
 python -m markflow.cli.commands execute add_animal_ears [参数]
 ```
 
-### 示例
+## 依赖安装
 
 ```bash
-python -m markflow.cli.commands execute add_animal_ears
+pip install PIL
+pip install torch
 ```
-
-查看完整参数说明：
-
-```bash
-python -m markflow.cli.commands info add_animal_ears
-```
-
-## 输出位置
-
-生成的输出保存在 `skills/add_animal_ears/output/` 目录下。
 
 ---
 
-*文档自动生成于 2026-08-27 23:41:46*
+*文档生成于 2026-09-01 16:15:57*

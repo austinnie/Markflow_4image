@@ -1,0 +1,169 @@
+{
+  "name": "add_animal_ears",
+  "display_name": "添加兽耳",
+  "description": "为人物添加动物耳朵，支持猫耳、狗耳、狐耳、狼耳、兔耳、熊耳。使用 ControlNet 保持人物面部不变。",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "兽耳"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "animal",
+      "type": "string",
+      "description": "动物类型 (cat/dog/fox/wolf/bunny/bear)",
+      "required": false,
+      "default": "cat"
+    },
+    {
+      "name": "prompt",
+      "type": "string",
+      "description": "自定义提示词（覆盖默认）",
+      "required": false
+    },
+    {
+      "name": "negative_prompt",
+      "type": "string",
+      "description": "负面提示词",
+      "required": false
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.55
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    },
+    {
+      "name": "cfg_scale",
+      "type": "float",
+      "description": "提示词引导强度",
+      "required": false,
+      "default": 7.0
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "description": "ControlNet 类型 (canny/openpose/depth/hed/mlsd/lineart)",
+      "required": false,
+      "default": "lineart"
+    },
+    {
+      "name": "controlnet_strength",
+      "type": "float",
+      "description": "ControlNet 权重 (0.0-1.0)",
+      "required": false,
+      "default": 1.0
+    },
+    {
+      "name": "width",
+      "type": "integer",
+      "description": "输出宽度",
+      "required": false
+    },
+    {
+      "name": "height",
+      "type": "integer",
+      "description": "输出高度",
+      "required": false
+    },
+    {
+      "name": "resize_mode",
+      "type": "string",
+      "description": "调整模式 (crop/fit/stretch)",
+      "required": false,
+      "default": "crop"
+    },
+    {
+      "name": "model_name",
+      "type": "string",
+      "description": "底模名称",
+      "required": false
+    },
+    {
+      "name": "scheduler",
+      "type": "string",
+      "description": "采样器 (DDIM/DPM/UniPC/Euler/EulerAncestral)",
+      "required": false,
+      "default": "DDIM"
+    },
+    {
+      "name": "output_path",
+      "type": "string",
+      "description": "输出路径",
+      "required": false
+    },
+    {
+      "name": "output_dir",
+      "type": "string",
+      "description": "输出目录",
+      "required": false
+    },
+    {
+      "name": "save_mask",
+      "type": "boolean",
+      "description": "是否保存遮罩",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "batch_size",
+      "type": "integer",
+      "description": "批次大小",
+      "required": false,
+      "default": 1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "image_paths",
+      "description": "生成的图片路径列表"
+    },
+    {
+      "name": "animal",
+      "description": "应用的动物类型"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    },
+    {
+      "name": "parameters",
+      "description": "使用的参数"
+    },
+    {
+      "name": "metadata",
+      "description": "元数据信息"
+    }
+  ],
+  "config": {
+    "default_strength": 0.55,
+    "default_steps": 30,
+    "default_animal": "cat",
+    "default_controlnet_type": "lineart",
+    "default_cfg": 7.0,
+    "default_scheduler": "DDIM"
+  }
+}
