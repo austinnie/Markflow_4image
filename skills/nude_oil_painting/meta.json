@@ -1,0 +1,87 @@
+{
+  "name": "nude_oil_painting",
+  "display_name": "裸体油画",
+  "description": "基于参考图，生成古典/写实油画风格裸体人像",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "油画", "艺术", "古典"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "参考图路径",
+      "required": true
+    },
+    {
+      "name": "style",
+      "type": "string",
+      "description": "油画风格 (classical/baroque/impressionist/realistic/romantic/modern)",
+      "required": false,
+      "default": "classical"
+    },
+    {
+      "name": "pose",
+      "type": "string",
+      "description": "姿态 (standing/reclining/sitting/kneeling/lying)",
+      "required": false,
+      "default": "standing"
+    },
+    {
+      "name": "lighting",
+      "type": "string",
+      "description": "灯光风格 (studio/dramatic/warm/cool)",
+      "required": false,
+      "default": "studio"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.65
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "style",
+      "description": "应用的油画风格"
+    },
+    {
+      "name": "pose",
+      "description": "应用的姿态"
+    },
+    {
+      "name": "lighting",
+      "description": "应用的灯光风格"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_strength": 0.65,
+    "default_steps": 30,
+    "default_style": "classical",
+    "default_pose": "standing",
+    "default_lighting": "studio"
+  }
+}

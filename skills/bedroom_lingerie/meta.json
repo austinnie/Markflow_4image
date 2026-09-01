@@ -1,0 +1,75 @@
+{
+  "name": "bedroom_lingerie",
+  "display_name": "卧室唯美内衣",
+  "description": "基于参考图，生成一张在床上穿着唯美内衣的人物正面全身图",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "内衣", "卧室"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "参考图路径",
+      "required": true
+    },
+    {
+      "name": "outfit",
+      "type": "string",
+      "description": "内衣风格 (white_lace/black_silk/pink_satin/red_velvet/blue_lace)",
+      "required": false,
+      "default": "white_lace"
+    },
+    {
+      "name": "pose",
+      "type": "string",
+      "description": "姿态 (lying/sitting/kneeling/standing)",
+      "required": false,
+      "default": "lying"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.7
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "outfit",
+      "description": "应用的内衣风格"
+    },
+    {
+      "name": "pose",
+      "description": "应用的姿态"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_strength": 0.7,
+    "default_steps": 30,
+    "default_outfit": "white_lace",
+    "default_pose": "lying"
+  }
+}

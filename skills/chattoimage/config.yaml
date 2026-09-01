@@ -1,0 +1,59 @@
+# ChatToImage 配置文件
+
+# LLM 配置
+llm:
+  model: qwen2.5:7b
+  api_type: ollama  # ollama | openai | openai_compatible
+  api_base: http://localhost:11434
+  api_key: ""
+  temperature: 0.3
+  max_tokens: 2048
+
+# 对话配置
+conversation:
+  max_history: 10
+  enable_context: true
+  auto_save_context: true
+
+# 默认生成参数
+defaults:
+  steps: 30
+  cfg_scale: 7.5
+  width: 512
+  height: 768
+  strength: 0.55
+  seed: -1
+  model_name: ""
+
+# 意图映射（可扩展）
+intents:
+  text_to_image:
+    skill: sd_image_generator
+    required: [prompt]
+  change_clothes:
+    skill: change_clothes
+    required: [image_path, prompt]
+  change_background:
+    skill: change_background
+    required: [image_path, preset]
+  change_expression:
+    skill: change_expression
+    required: [image_path, expression]
+  change_hair:
+    skill: change_hair
+    required: [image_path]
+  add_glasses:
+    skill: add_glasses
+    required: [image_path]
+  add_animal_ears:
+    skill: add_animal_ears
+    required: [image_path, animal]
+  style_transfer:
+    skill: style_transfer
+    required: [image_path, style]
+  anime_to_real:
+    skill: anime_to_real
+    required: [image_path]
+  expand_to_full_body:
+    skill: expand_to_full_body
+    required: [image_path]

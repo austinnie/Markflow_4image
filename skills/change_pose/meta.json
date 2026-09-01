@@ -1,0 +1,63 @@
+{
+  "name": "change_pose",
+  "display_name": "改变姿态",
+  "description": "改变图片中人物的姿态，支持站立、坐姿、躺姿、侧躺、跪姿等多种预设",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "姿态", "ControlNet"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "pose",
+      "type": "string",
+      "description": "目标姿态 (standing/sitting/lying/side_lying/kneeling/walking/running/dancing/squatting/jumping)",
+      "required": false,
+      "default": "standing"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.65
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "pose",
+      "description": "应用的姿态"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_strength": 0.65,
+    "default_steps": 30,
+    "default_pose": "standing"
+  }
+}

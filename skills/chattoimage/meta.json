@@ -1,0 +1,99 @@
+{
+  "name": "ChatToImage",
+  "display_name": "对话式图像生成",
+  "description": "通过自然语言对话生成和编辑图片。支持文生图、换装、换背景、换表情、换发型、加配饰、风格转换等多种图片操作。支持多轮对话记忆上下文。",
+  "version": "1.0.0",
+  "tags": ["对话", "图像生成", "文生图", "图生图", "多轮对话", "LLM"],
+  "dependencies": ["requests"],
+  "inputs": [
+    {
+      "name": "message",
+      "type": "string",
+      "description": "用户的自然语言描述",
+      "required": true
+    },
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径（用于图生图操作）",
+      "required": false
+    },
+    {
+      "name": "model",
+      "type": "string",
+      "description": "LLM 模型名称",
+      "required": false,
+      "default": "qwen2.5:7b"
+    },
+    {
+      "name": "api_type",
+      "type": "string",
+      "description": "LLM API 类型 (ollama/openai/openai_compatible)",
+      "required": false,
+      "default": "ollama"
+    },
+    {
+      "name": "api_base",
+      "type": "string",
+      "description": "API 地址",
+      "required": false,
+      "default": "http://localhost:11434"
+    },
+    {
+      "name": "api_key",
+      "type": "string",
+      "description": "API Key（OpenAI 等需要）",
+      "required": false
+    },
+    {
+      "name": "conversation_id",
+      "type": "string",
+      "description": "会话 ID（用于多轮对话）",
+      "required": false,
+      "default": "default"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "response",
+      "description": "AI 的回复内容"
+    },
+    {
+      "name": "image_paths",
+      "description": "生成的图片路径列表"
+    },
+    {
+      "name": "intent",
+      "description": "识别到的意图类型"
+    },
+    {
+      "name": "skill_used",
+      "description": "实际调用的技能名称"
+    },
+    {
+      "name": "params",
+      "description": "传递给子技能的参数"
+    },
+    {
+      "name": "conversation_id",
+      "description": "会话 ID"
+    },
+    {
+      "name": "context_summary",
+      "description": "上下文摘要"
+    }
+  ],
+  "config": {
+    "model": "qwen2.5:7b",
+    "api_type": "ollama",
+    "api_base": "http://localhost:11434",
+    "temperature": 0.3,
+    "max_history": 10,
+    "default_steps": 30,
+    "default_cfg": 7.5,
+    "default_width": 512,
+    "default_height": 768,
+    "default_strength": 0.55,
+    "enable_context": true
+  }
+}

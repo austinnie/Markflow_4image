@@ -1,0 +1,87 @@
+{
+  "name": "nude_sculpture",
+  "display_name": "裸体雕塑",
+  "description": "基于参考图，生成大理石/青铜等材质的裸体雕塑人像",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "雕塑", "艺术", "古典", "3D"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "参考图路径",
+      "required": true
+    },
+    {
+      "name": "material",
+      "type": "string",
+      "description": "雕塑材质 (marble/bronze/terracotta/jade/alabaster/gold)",
+      "required": false,
+      "default": "marble"
+    },
+    {
+      "name": "style",
+      "type": "string",
+      "description": "雕塑风格 (classical/hellenistic/renaissance/neoclassical/modern/archaic)",
+      "required": false,
+      "default": "classical"
+    },
+    {
+      "name": "pose",
+      "type": "string",
+      "description": "姿态 (standing/reclining/sitting/kneeling/dancing)",
+      "required": false,
+      "default": "standing"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.6
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "material",
+      "description": "应用的雕塑材质"
+    },
+    {
+      "name": "style",
+      "description": "应用的雕塑风格"
+    },
+    {
+      "name": "pose",
+      "description": "应用的姿态"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_strength": 0.6,
+    "default_steps": 30,
+    "default_material": "marble",
+    "default_style": "classical",
+    "default_pose": "standing"
+  }
+}

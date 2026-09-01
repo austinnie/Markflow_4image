@@ -1,0 +1,75 @@
+{
+  "name": "studio_nude",
+  "display_name": "工作室裸露",
+  "description": "基于参考图，生成一张在专业摄影工作室裸露的人物全身图",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "裸露", "工作室"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "参考图路径",
+      "required": true
+    },
+    {
+      "name": "pose",
+      "type": "string",
+      "description": "姿态 (standing/sitting/kneeling)",
+      "required": false,
+      "default": "standing"
+    },
+    {
+      "name": "lighting",
+      "type": "string",
+      "description": "灯光风格 (soft/dramatic/rim)",
+      "required": false,
+      "default": "soft"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.7
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "pose",
+      "description": "应用的姿态"
+    },
+    {
+      "name": "lighting",
+      "description": "应用的灯光风格"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_strength": 0.7,
+    "default_steps": 30,
+    "default_pose": "standing",
+    "default_lighting": "soft"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "intimate_closeup",
+  "display_name": "私处特写",
+  "description": "基于参考图，生成一张艺术风格的私处特写图片",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "私处特写", "艺术摄影"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "参考图路径",
+      "required": true
+    },
+    {
+      "name": "style",
+      "type": "string",
+      "description": "风格 (artistic/romantic/natural/moody)",
+      "required": false,
+      "default": "artistic"
+    },
+    {
+      "name": "pose",
+      "type": "string",
+      "description": "姿态 (lying/sitting/kneeling/standing)",
+      "required": false,
+      "default": "lying"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.6
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "style",
+      "description": "应用的风格"
+    },
+    {
+      "name": "pose",
+      "description": "应用的姿态"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_strength": 0.6,
+    "default_steps": 30,
+    "default_style": "artistic",
+    "default_pose": "lying"
+  }
+}
