@@ -1,0 +1,126 @@
+{
+  "name": "change_lighting",
+  "display_name": "Change Lighting",
+  "description": "改变光照效果",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "required": true,
+      "description": "输入图片路径"
+    },
+    {
+      "name": "lighting",
+      "type": "string",
+      "required": true,
+      "description": "光照模式 (golden_hour, night, studio, soft, dramatic, warm, cool, etc.)"
+    },
+    {
+      "name": "prompt",
+      "type": "string",
+      "required": false,
+      "description": "自定义提示词"
+    },
+    {
+      "name": "negative_prompt",
+      "type": "string",
+      "required": false,
+      "description": "负向提示词",
+      "default": ""
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "required": false,
+      "description": "重绘强度 (0-1)",
+      "default": 0.6
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "required": false,
+      "description": "迭代步数",
+      "default": 25
+    },
+    {
+      "name": "cfg_scale",
+      "type": "float",
+      "required": false,
+      "description": "提示词引导强度",
+      "default": 7.5
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "required": false,
+      "description": "随机种子，-1 表示随机",
+      "default": -1
+    },
+    {
+      "name": "model_name",
+      "type": "string",
+      "required": false,
+      "description": "底模名称"
+    },
+    {
+      "name": "width",
+      "type": "integer",
+      "required": false,
+      "description": "输出宽度"
+    },
+    {
+      "name": "height",
+      "type": "integer",
+      "required": false,
+      "description": "输出高度"
+    },
+    {
+      "name": "output_path",
+      "type": "string",
+      "required": false,
+      "description": "输出路径"
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "required": false,
+      "description": "ControlNet 类型",
+      "default": "openpose"
+    },
+    {
+      "name": "device",
+      "type": "string",
+      "required": false,
+      "description": "设备 (cpu/cuda)",
+      "default": "cpu"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "status",
+      "description": "执行状态 (success/error)"
+    },
+    {
+      "name": "output_path",
+      "description": "输出图片路径"
+    },
+    {
+      "name": "image_paths",
+      "description": "所有生成的图片路径列表"
+    }
+  ],
+  "dependencies": [],
+  "tags": [
+    "image",
+    "edit",
+    "controlnet"
+  ],
+  "config": {
+    "device": "cpu",
+    "default_steps": 25,
+    "default_cfg": 7.5,
+    "default_strength": 0.6,
+    "controlnet_type": "openpose"
+  }
+}
