@@ -80,7 +80,7 @@ class BathroomNude:
 
     def _setup_config(self):
         defaults = {
-            'default_steps': 30,
+            'default_steps': 20,
             'default_strength': 0.7,
             'default_pose': 'standing',
             'default_atmosphere': 'steamy',

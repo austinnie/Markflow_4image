@@ -1,29 +1,32 @@
 ================================================================================
 代码快照 - Code Snapshot
 ================================================================================
-生成时间: 2026-08-30T10:51:05.582484
+生成时间: 2026-09-01T22:12:28.369304
 项目根目录: E:\SD_OpenVINO\Markflow_4image
-总文件数: 150
-总代码行数: 28,427
-总字符数: 1,241,722
+总文件数: 160
+总代码行数: 30,322
+总字符数: 1,305,815
 ================================================================================
 
 【按语言统计】
 ----------------------------------------
-  Python: 147 个文件
+  Python: 155 个文件
   JSON: 3 个文件
+  Batch: 2 个文件
 
 【按扩展名统计】
 ----------------------------------------
-  .py: 147 个文件
+  .py: 155 个文件
   .json: 3 个文件
+  .bat: 2 个文件
 
 【文件列表】
 ----------------------------------------
+  test.bat (61 行, 3.3 KB)
   markflow\__init__.py (26 行, 0.8 KB)
   markflow\cli\commands.py (658 行, 21.9 KB)
   markflow\cli\__init__.py (5 行, 0.1 KB)
-  markflow\core\executor.py (496 行, 17.5 KB)
+  markflow\core\executor.py (525 行, 18.7 KB)
   markflow\core\generator.py (938 行, 38.6 KB)
   markflow\core\parser.py (497 行, 18.3 KB)
   markflow\core\project_builder.py (289 行, 8.7 KB)
@@ -31,25 +34,34 @@
   markflow\core\registry.py (175 行, 6.6 KB)
   markflow\core\tracer.py (147 行, 5.2 KB)
   markflow\core\__init__.py (21 行, 0.5 KB)
-  markflow\gui\launcher.py (667 行, 26.4 KB)
+  markflow\gui\launcher.py (676 行, 26.7 KB)
   markflow\gui\__init__.py (7 行, 0.1 KB)
   markflow\gui\__main__.py (8 行, 0.1 KB)
   markflow\templates\base.py (130 行, 6.2 KB)
   markflow\templates\__init__.py (5 行, 0.1 KB)
   markflow\utils\code_collect.py (480 行, 18.0 KB)
-  markflow\utils\controlnet_config.py (60 行, 2.5 KB)
-  markflow\utils\model_config.py (369 行, 13.1 KB)
-  scripts\fix_all_skills.py (66 行, 2.1 KB)
-  scripts\generate_girl_series.py (107 行, 4.5 KB)
-  scripts\generate_images.py (1042 行, 40.8 KB)
+  markflow\utils\controlnet_config.py (72 行, 2.8 KB)
+  markflow\utils\model_config.py (399 行, 14.1 KB)
+  scripts\batch_remove_clothes.bat (5 行, 0.2 KB)
+  scripts\batch_remove_clothes.py (162 行, 5.4 KB)
+  scripts\check_missing_time.py (32 行, 0.9 KB)
+  scripts\clean_skill_images.py (89 行, 2.7 KB)
+  scripts\fix_missing_time.py (149 行, 3.9 KB)
+  scripts\fix_param_passthrough.py (191 行, 6.4 KB)
+  scripts\generate_girl_series.py (229 行, 9.0 KB)
+  scripts\generate_images.py (1112 行, 43.6 KB)
   scripts\generate_readme_for_markflow4image.py (457 行, 21.8 KB)
   scripts\generate_readme_for_skill.py (92 行, 2.8 KB)
+  scripts\generate_special.py (369 行, 18.0 KB)
   scripts\lora_index.json (8004 行, 297.5 KB)
   scripts\markflow_gui.py (17 行, 0.4 KB)
   scripts\models_index.json (8004 行, 297.5 KB)
   scripts\pack_project.py (252 行, 8.1 KB)
+  scripts\preprocess_image.py (251 行, 9.4 KB)
+  scripts\rename_images.py (161 行, 5.4 KB)
   scripts\review_skill.py (232 行, 7.2 KB)
   scripts\test_change_clothes.py (36 行, 1.1 KB)
+  scripts\test_mediapipe.py (219 行, 7.1 KB)
   scripts\configs\girls_config.json (68 行, 6.0 KB)
   scripts\configs\prompts\dynamic_prompt.py (24 行, 0.6 KB)
   scripts\configs\prompts\animals\bird_sketch.py (41 行, 2.6 KB)
@@ -175,6 +187,76 @@
 
 【文件内容】
 ================================================================================
+
+
+================================================================================
+文件: test.bat
+语言: Batch
+行数: 61
+大小: 3.3 KB
+--------------------------------------------------------------------------------
+
+python -m markflow.cli.commands execute remove_clothes image_path="input/girl_117.jpg"
+
+python -m markflow.cli.commands execute old_photo_restore image_path="input/girl_117.jpg" style="vibrant"
+
+python -m markflow.cli.commands execute real_to_anime image_path="input/girl_117.jpg" style="modern"
+
+python -m markflow.cli.commands execute remove_object image_path="input/girl_117.jpg" skip_manual=True
+
+python -m markflow.cli.commands execute replace_object image_path="input/girl_117.jpg" object_prompt="a red sports car" skip_manual=True
+
+python -m markflow.cli.commands execute fantasy_character image_path="input/girl_117.jpg" fantasy_type="elf"
+
+python -m markflow.cli.commands execute change_perspective image_path="input/girl_117.jpg" perspective="aerial"
+
+python -m markflow.cli.commands execute change_skin_tone image_path="input/girl_117.jpg" tone="tan"
+
+python -m markflow.cli.commands execute colorize_sketch image_path="input/girl_117.jpg" style="anime"
+
+python -m markflow.cli.commands execute day_night_transfer image_path="input/girl_117.jpg" mode="night"
+
+python -m markflow.cli.commands execute change_lighting image_path="input/girl_117.jpg" lighting="golden_hour"
+
+python -m markflow.cli.commands execute change_makeup image_path="input/girl_117.jpg" style="glamour"
+
+python -m markflow.cli.commands execute change_nationality image_path="input/girl_117.jpg" ethnicity="caucasian"
+
+python -m markflow.cli.commands execute change_furniture image_path="input/girl_117.jpg" style="scandinavian"
+
+python -m markflow.cli.commands execute change_gender image_path="input/girl_117.jpg" direction="male_to_female"
+
+python -m markflow.cli.commands execute change_hair image_path="input/girl_117.jpg" style="long_flowing" color="pink"
+
+python -m markflow.cli.commands execute change_eye_color image_path="input/girl_117.jpg" color="green"
+
+python -m markflow.cli.commands execute change_face image_path="input/girl_117.jpg" prompt="beautiful face, natural smile, masterpiece"
+
+python -m markflow.cli.commands execute change_expression image_path="input/girl_117.jpg" expression="smile"
+
+python -m markflow.cli.commands execute change_body_type image_path="input/girl_117.jpg" body_type="muscular"
+
+python -m markflow.cli.commands execute change_clothing_style image_path="input/girl_117.jpg" style="futuristic"
+
+python -m markflow.cli.commands execute anime_to_real image_path="input/girl_117.jpg" style="photorealistic"
+
+python -m markflow.cli.commands execute change_age image_path="input/girl_117.jpg" age="old"
+
+python -m markflow.cli.commands execute add_animal_ears image_path="input/girl_117.jpg" animal="cat"
+
+python -m markflow.cli.commands execute add_background_objects image_path="input/girl_117.jpg" object="flowers"
+
+python -m markflow.cli.commands execute add_glasses image_path="input/girl_117.jpg" style="round"
+
+python -m markflow.cli.commands execute add_tattoo image_path="input/girl_117.jpg" tattoo="dragon"
+
+python -m markflow.cli.commands execute style_transfer image_path="input/girl_117.jpg" style="watercolor"
+
+python -m markflow.cli.commands execute weather_transfer image_path="input/girl_117.jpg" weather="rainy"
+
+python -m markflow.cli.commands execute season_transfer image_path="input/girl_117.jpg" season="winter"
+
+python -m markflow.cli.commands execute change_background image_path="input/girl_117.jpg" preset="beach"
 
 
 ================================================================================
@@ -896,8 +978,8 @@ __all__ = ["main"]
 ================================================================================
 文件: markflow\core\executor.py
 语言: Python
-行数: 496
-大小: 17.5 KB
+行数: 525
+大小: 18.7 KB
 --------------------------------------------------------------------------------
 
 # markflow/core/executor.py
@@ -928,6 +1010,7 @@ class SkillExecutor:
         self.generator = CodeGenerator()
         self.project_builder = ProjectBuilder()  # 新增
         self.quality_checker = CodeQualityChecker()  # 新增
+        self._executed_skills = set()  # 新增：记录已执行的技能
 
     # ==================== 新增配置处理方法 ====================
     
@@ -1295,6 +1378,9 @@ class SkillExecutor:
         """
         try:
             instance = self.registry.get_instance(skill_name)
+
+            # 记录执行的技能
+            self._executed_skills.add(skill_name)            
             
             # ✅ 自动应用配置默认值到 instance.config
             if hasattr(instance, 'config') and hasattr(instance, 'name'):
@@ -1314,6 +1400,21 @@ class SkillExecutor:
                     )
             
             return instance.execute(**kwargs)
+
+            # ========== 新增：执行后清理 ==========
+            # 如果技能有 pipeline 属性，尝试清理（如果是 SD 技能）
+            if hasattr(instance, 'pipeline'):
+                try:
+                    # 将 pipeline 移到 CPU 并清空缓存（不强制卸载）
+                    if hasattr(instance.pipeline, 'to'):
+                        instance.pipeline.to('cpu')
+                    # 记录需要清理
+                    self._executed_skills.add(skill_name)
+                except:
+                    pass
+            
+            return result
+            
         except Exception as e:
             logger.error(f"执行技能失败: {e}")
             return {
@@ -1321,7 +1422,17 @@ class SkillExecutor:
                 "error": str(e),
                 "skill": skill_name
             }
-    
+
+    def clear_model_cache(self, skill_name: str = None):
+        """清理模型缓存"""
+        if skill_name:
+            if skill_name in self._executed_skills:
+                self._executed_skills.remove(skill_name)
+                logger.info(f"已清理技能缓存: {skill_name}")
+        else:
+            self._executed_skills.clear()
+            logger.info("已清理所有技能缓存")
+            
     def execute_from_markdown(self, markdown_content: str, **kwargs) -> Dict[str, Any]:
         """
         从Markdown执行技能
@@ -1745,7 +1856,7 @@ class CodeGenerator:
         try:
             analysis_result = self._analyze_data(data, **kwargs)
             kwargs["analysis"] = analysis_result
-            logger.info(f"数据分析完成: {len(str(analysis_result))} 字符")
+            logger.info("数据分析完成: %s 字符" % len(str(analysis_result)))
         except Exception as e:
             logger.error(f"数据分析失败: {{e}}")
             raise
@@ -3916,8 +4027,8 @@ __all__ = [
 ================================================================================
 文件: markflow\gui\launcher.py
 语言: Python
-行数: 667
-大小: 26.4 KB
+行数: 676
+大小: 26.7 KB
 --------------------------------------------------------------------------------
 
 """
@@ -4142,6 +4253,15 @@ class MarkFlowLauncher:
         
         # ✅ 强制清除缓存
         self.executor.registry.clear()
+
+        # ========== 新增：刷新模型索引 ==========
+        try:
+            from markflow.utils.model_config import refresh_index
+            refresh_index()
+            self._log("🔄 模型索引已刷新", 'info')
+        except Exception as e:
+            self._log(f"⚠️ 刷新模型索引失败: {e}", 'warn')
+        
         
         # 重新加载技能
         if self.skill_dir.exists():
@@ -5267,8 +5387,8 @@ if __name__ == "__main__":
 ================================================================================
 文件: markflow\utils\controlnet_config.py
 语言: Python
-行数: 60
-大小: 2.5 KB
+行数: 72
+大小: 2.8 KB
 --------------------------------------------------------------------------------
 
 # markflow/utils/controlnet_config.py
@@ -5308,36 +5428,48 @@ CONTROLNET_MODEL_MAP = {
 }
 
 def resolve_controlnet_path(model_key: str) -> Optional[str]:
-    """解析底层 ControlNet 模型路径"""
+    """解析底层 ControlNet 模型路径（增强版）"""
     folder_name = CONTROLNET_MODEL_MAP.get(model_key)
     if not folder_name:
         return None
     
     # 1. 检查是否在 E:\SD_OpenVINO\models\controlnet 目录下
     target_dir = CONTROLNET_MODEL_DIR / folder_name
+    
+    # 2. 如果是 HF 缓存结构，找 snapshots
     if target_dir.exists():
-        # 2. 因为 HuggingFace 缓存通常带 snapshots，需要找一下里面真正的模型文件夹
-        # 优先检查目录下有没有 config.json
+        # 检查是否直接有 config.json
         if (target_dir / "config.json").exists():
             return str(target_dir)
         
-        # 如果目录下没有 config.json，说明是 HF 的缓存结构，进入 snapshots 里找
-        if (target_dir / "snapshots").exists():
-            # 遍历 snapshots 下的文件夹，找到包含 config.json 的那个
-            for snapshot in (target_dir / "snapshots").iterdir():
-                if (snapshot / "config.json").exists():
+        # 检查 snapshots 子目录
+        snapshots_dir = target_dir / "snapshots"
+        if snapshots_dir.exists():
+            for snapshot in snapshots_dir.iterdir():
+                if snapshot.is_dir() and (snapshot / "config.json").exists():
                     return str(snapshot)
+        
+        # 3. 尝试任何子目录中的 config.json
+        for subdir in target_dir.iterdir():
+            if subdir.is_dir() and (subdir / "config.json").exists():
+                return str(subdir)
     
-    # 3. 如果上述都没找到，返回 None，并打印详细日志
-    print(f"❌ 警告：未找到本地 ControlNet 模型 {folder_name}，请检查目录结构。")
+    # 4. 回退：如果传入的是完整路径，直接检查
+    if model_key and Path(model_key).exists():
+        return str(model_key)
+    
+    # 5. 打印详细警告
+    print(f"❌ 警告：未找到本地 ControlNet 模型 {folder_name}")
+    print(f"   查找路径: {target_dir}")
+    print(f"   💡 请检查 models/controlnet/ 目录结构")
     return None
 
 
 ================================================================================
 文件: markflow\utils\model_config.py
 语言: Python
-行数: 369
-大小: 13.1 KB
+行数: 399
+大小: 14.1 KB
 --------------------------------------------------------------------------------
 
 # markflow/utils/model_config.py
@@ -5534,7 +5666,13 @@ def resolve_model_path(model_name: str = None) -> Optional[str]:
     
     return None
 
-def resolve_lora_paths() -> List[Dict[str, Any]]:
+def resolve_lora_paths(lora_weights: Dict[str, float] = None) -> List[Dict[str, Any]]:
+    """
+    解析 LoRA 路径
+    
+    Args:
+        lora_weights: LoRA 名称到权重的映射，如 {"lora_000004": 0.7, "aesthetic_anime": 0.9}
+    """
     available_loras = _LORAS
     type_loras = [l for l in available_loras if l.get("lora_type") == MODEL_TYPE]
     
@@ -5543,13 +5681,21 @@ def resolve_lora_paths() -> List[Dict[str, Any]]:
     
     lora_indices = LORA_ACTIVE_INDICES if LORA_ACTIVE_INDICES else [0]
     loras = []
+    
     for idx in lora_indices:
         if idx < len(type_loras):
             lora = type_loras[idx]
+            lora_name = lora.get("name")
+            
+            # 如果传入了自定义权重，使用它；否则使用默认 0.8
+            weight = 0.8
+            if lora_weights and lora_name in lora_weights:
+                weight = lora_weights[lora_name]
+            
             loras.append({
                 "path": lora.get("absolute_path"),
-                "weight": 0.8,
-                "name": lora.get("name"),
+                "weight": weight,
+                "name": lora_name,
                 "filename": lora.get("filename"),
             })
     return loras
@@ -5625,6 +5771,16 @@ def switch_model(model_type: str = None, model_name: str = None):
         return True
     return False
 
+# 在 main() 函数之前添加
+def refresh_index():
+    """刷新模型和 LoRA 索引（扫描目录并更新全局变量）"""
+    global _MODELS, _LORAS
+    print("🔄 正在刷新模型索引...")
+    _MODELS = scan_models()
+    _LORAS = scan_loras()
+    print(f"   ✅ 找到 {len(_MODELS)} 个模型, {len(_LORAS)} 个 LoRA")
+    return _MODELS, _LORAS
+    
 # ==================== 命令行入口 ====================
 def main():
     parser = argparse.ArgumentParser(description="统一模型配置管理工具")
@@ -5636,9 +5792,14 @@ def main():
     parser.add_argument("--ov", action="store_true", help="启用 OpenVINO")
     parser.add_argument("--no-ov", action="store_true", help="禁用 OpenVINO")
     parser.add_argument("--clear", action="store_true", help="清除用户配置")
+    parser.add_argument("--refresh", action="store_true", help="刷新模型和 LoRA 索引")  # 新增
     
     args = parser.parse_args()
-    
+
+    if args.refresh:  # 新增
+        refresh_index()
+        return
+        
     if args.status:
         cfg = get_model_config()
         print("\n📊 当前模型配置状态")
@@ -5705,6 +5866,7 @@ __all__ = [
     "get_loras",
     "MODEL_TYPE",
     "PROJECT_ROOT",
+    "refresh_index",  # 新增
 ]
 
 if __name__ == "__main__":
@@ -5712,95 +5874,39 @@ if __name__ == "__main__":
 
 
 ================================================================================
-文件: scripts\fix_all_skills.py
-语言: Python
-行数: 66
-大小: 2.1 KB
+文件: scripts\batch_remove_clothes.bat
+语言: Batch
+行数: 5
+大小: 0.2 KB
 --------------------------------------------------------------------------------
 
-# tools/fix_all_skills.py
-"""
-一键修复所有技能中的 config 硬编码索引问题
-将 self.config['xxx'] 自动修改为 self.config.get('xxx', 默认值)
-"""
-
-import re
-from pathlib import Path
-
-SKILLS_DIR = Path(__file__).parent.parent / "skills"
-
-def fix_skill_file(file_path: Path) -> int:
-    """修复单个技能文件，返回修复次数"""
-    try:
-        content = file_path.read_text(encoding='utf-8')
-    except Exception:
-        return 0
-
-    original = content
-    fixes = 0
-
-    # 1. 修复 self.config['output_dir'] -> self.config.get('output_dir', 默认值)
-    content = re.sub(
-        r"self\.config\['output_dir'\]",
-        "self.config.get('output_dir', str(self.skill_dir / 'output'))",
-        content
-    )
-    fixes += content.count("self.config.get('output_dir', str(self.skill_dir / 'output'))") - original.count("self.config.get('output_dir', str(self.skill_dir / 'output'))")
-
-    # 2. 修复 self.config['default_xxx'] -> self.config.get('default_xxx', 默认值)
-    content = re.sub(
-        r"self\.config\['(default_[a-z_]+)'\]",
-        r"self.config.get('\1', None)",
-        content
-    )
-    
-    # 3. 修复 self.config['device'] -> self.config.get('device', 'cpu')
-    content = re.sub(
-        r"self\.config\['device'\]",
-        r"self.config.get('device', 'cpu')",
-        content
-    )
-
-    if content != original:
-        file_path.write_text(content, encoding='utf-8')
-        print(f"  ✅ 已修复: {file_path.name}")
-        return 1
-    return 0
-
-def main():
-    print("=" * 60)
-    print("🔧 自动修复所有技能中的 config 硬编码问题")
-    print("=" * 60)
-
-    total_fixed = 0
-    for skill_dir in SKILLS_DIR.iterdir():
-        if skill_dir.is_dir():
-            skill_file = skill_dir / "skill.py"
-            if skill_file.exists():
-                total_fixed += fix_skill_file(skill_file)
-
-    print(f"\n🎉 修复完成！共修改了 {total_fixed} 个技能文件。")
-    print("💡 修复后，所有技能在无参数调用时都能稳定运行！")
-
-if __name__ == "__main__":
-    main()
+@echo off
+for %%f in (input\*.jpg input\*.png input\*.jpeg) do (
+    echo Processing %%f...
+    python -m markflow.cli.commands execute remove_clothes image_path="%%f" output_path="output\remove_clothes\%%~nf_remove_clothes.png"
+)
 
 
 ================================================================================
-文件: scripts\generate_girl_series.py
+文件: scripts\batch_remove_clothes.py
 语言: Python
-行数: 107
-大小: 4.5 KB
+行数: 162
+大小: 5.4 KB
 --------------------------------------------------------------------------------
 
-# scripts/generate_girl_series.py
+# scripts/batch_remove_clothes.py
 """
-给 input/girl.jpg 批量生成系列图
-自动组合不同的背景、姿势、表情、服装等技能
+批量执行 remove_clothes 技能
+遍历 input/ 目录下所有图片，生成去衣效果
+用法:
+  python scripts/batch_remove_clothes.py
+  python scripts/batch_remove_clothes.py --image girl_117.jpg
+  python scripts/batch_remove_clothes.py --first
 """
 
 import sys
 import time
+import argparse
 from pathlib import Path
 
 # 添加项目根目录
@@ -5810,12 +5916,721 @@ if str(project_root) not in sys.path:
 
 from markflow.cli.commands import execute_skill
 
+
 # ==================== 配置 ====================
-REFERENCE_IMAGE = "input/girl.jpg"  # 你的统一输入目录
-OUTPUT_ROOT = Path("output")        # 统一输出目录
+INPUT_DIR = Path("input")
+OUTPUT_DIR = Path("output/remove_clothes")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# 技能参数
+SKILL_NAME = "remove_clothes"
+SKILL_PARAMS = {
+    "strength": 0.6,  # 重绘强度
+    "prompt": "nude, naked, without clothes, bare skin, realistic",  # 正向提示词
+    "negative_prompt": "clothes, clothing, dress, shirt, pants, jacket, accessories",  # 负向提示词
+}
+
+
+def process_single_image(image_path: Path, image_index: int, total_images: int) -> bool:
+    """处理单张图片"""
+    print(f"\n{'='*60}")
+    print(f"📸 处理图片 [{image_index}/{total_images}]: {image_path.name}")
+    print('='*60)
+    
+    # 生成输出文件名
+    output_path = OUTPUT_DIR / f"{image_path.stem}_remove_clothes.png"
+    
+    # 如果已存在，询问是否覆盖
+    if output_path.exists():
+        print(f"⚠️ 输出文件已存在: {output_path.name}")
+        # 自动添加序号
+        counter = 1
+        while output_path.exists():
+            output_path = OUTPUT_DIR / f"{image_path.stem}_remove_clothes_{counter:02d}.png"
+            counter += 1
+        print(f"📌 使用新文件名: {output_path.name}")
+    
+    # 准备参数
+    params = {
+        "image_path": str(image_path),
+        "output_path": str(output_path),
+        **SKILL_PARAMS
+    }
+    
+    print(f"🚀 执行: {SKILL_NAME}")
+    print(f"   📥 输入: {image_path.name}")
+    print(f"   📤 输出: {output_path.name}")
+    
+    try:
+        result = execute_skill(SKILL_NAME, **params)
+        
+        if isinstance(result, dict) and result.get('status') == 'success':
+            print(f"   ✅ 成功: {output_path}")
+            return True
+        else:
+            error = result.get('error', '未知错误') if isinstance(result, dict) else str(result)
+            print(f"   ❌ 失败: {error}")
+            return False
+            
+    except Exception as e:
+        print(f"   ❌ 异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def main():
+    parser = argparse.ArgumentParser(description="批量执行 remove_clothes 技能")
+    parser.add_argument("--image", "-i", type=str, help="指定处理单张图片")
+    parser.add_argument("--first", "-f", action="store_true", help="只处理第一张图片")
+    parser.add_argument("--all", "-a", action="store_true", help="处理所有图片 (默认)")
+    parser.add_argument("--strength", "-s", type=float, default=0.6, help="重绘强度 (默认: 0.6)")
+    parser.add_argument("--prompt", "-p", type=str, help="自定义正向提示词")
+    parser.add_argument("--negative", "-n", type=str, help="自定义负向提示词")
+    args = parser.parse_args()
+    
+    # 更新参数
+    if args.strength:
+        SKILL_PARAMS["strength"] = args.strength
+    if args.prompt:
+        SKILL_PARAMS["prompt"] = args.prompt
+    if args.negative:
+        SKILL_PARAMS["negative_prompt"] = args.negative
+    
+    # 收集图片
+    extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
+    images = [f for f in INPUT_DIR.iterdir() if f.suffix.lower() in extensions]
+    images = [f for f in images if '_resized' not in f.stem]
+    
+    if not images:
+        print(f"❌ 在 {INPUT_DIR} 中未找到图片")
+        return
+    
+    images.sort()
+    
+    # 筛选图片
+    if args.image:
+        target = INPUT_DIR / args.image
+        if not target.exists():
+            # 尝试自动添加扩展名
+            for ext in extensions:
+                test_path = INPUT_DIR / f"{args.image}{ext}"
+                if test_path.exists():
+                    target = test_path
+                    break
+        if target.exists():
+            images = [target]
+            print(f"📌 指定图片: {target.name}")
+        else:
+            print(f"❌ 未找到图片: {args.image}")
+            print(f"💡 可用图片:")
+            for img in images:
+                print(f"   - {img.name}")
+            return
+    elif args.first:
+        images = images[:1]
+        print(f"📌 只处理第一张: {images[0].name}")
+    else:
+        print(f"📌 处理所有 {len(images)} 张图片")
+    
+    print(f"📂 输出目录: {OUTPUT_DIR}")
+    print(f"📋 参数:")
+    print(f"   strength: {SKILL_PARAMS['strength']}")
+    print(f"   prompt: {SKILL_PARAMS['prompt'][:50]}...")
+    print("=" * 60)
+    
+    success_count = 0
+    total = len(images)
+    
+    for idx, img_path in enumerate(images, 1):
+        if process_single_image(img_path, idx, total):
+            success_count += 1
+        time.sleep(0.5)
+    
+    print(f"\n{'='*60}")
+    print(f"🎉 完成！")
+    print(f"   ✅ 成功: {success_count}/{total}")
+    print(f"   📂 输出: {OUTPUT_DIR}")
+    print('='*60)
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+文件: scripts\check_missing_time.py
+语言: Python
+行数: 32
+大小: 0.9 KB
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+检查所有 skills 是否缺少 import time
+"""
+
+from pathlib import Path
+
+skills_dir = Path("skills")
+missing_time = []
+
+for skill_file in skills_dir.glob("*/skill.py"):
+    content = skill_file.read_text(encoding='utf-8')
+    # 检查是否使用了 time 相关函数但没有 import time
+    if ("time.time()" in content or "time.sleep(" in content):
+        if "import time" not in content:
+            missing_time.append(skill_file.parent.name)
+
+print("=" * 60)
+print("检查结果：缺少 import time 的技能")
+print("=" * 60)
+
+if missing_time:
+    for name in missing_time:
+        print(f"  ❌ {name}")
+    print(f"\n共 {len(missing_time)} 个技能需要修复")
+    print("\n修复命令：")
+    print(f"  python scripts/fix_missing_time.py")
+else:
+    print("  ✅ 所有技能都已正确导入 time")
+
+print("=" * 60)
+
+
+================================================================================
+文件: scripts\clean_skill_images.py
+语言: Python
+行数: 89
+大小: 2.7 KB
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+删除所有技能目录下的图片文件
+"""
+
+import argparse
+from pathlib import Path
+
+# 支持的图片扩展名
+IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="删除所有技能目录下的图片文件")
+    parser.add_argument("--dry-run", action="store_true", help="预览模式，不实际删除")
+    parser.add_argument("--skills-dir", default="skills", help="技能目录 (默认: skills)")
+    args = parser.parse_args()
+
+    skills_dir = Path(args.skills_dir)
+    if not skills_dir.exists():
+        print(f"❌ 目录不存在: {skills_dir}")
+        return
+
+    print("=" * 60)
+    print("🗑️  删除技能目录下的图片文件")
+    print("=" * 60)
+
+    total_files = 0
+    total_size = 0
+
+    for skill_file in skills_dir.glob("*/skill.py"):
+        skill_dir = skill_file.parent
+        images = []
+
+        for ext in IMAGE_EXTS:
+            images.extend(skill_dir.glob(f"*{ext}"))
+
+        # 排除 output 目录下的图片
+        images = [f for f in images if "output" not in f.parts]
+
+        if images:
+            print(f"\n📂 {skill_dir.name}/")
+            for img in images:
+                size = img.stat().st_size
+                total_size += size
+                total_files += 1
+                print(f"   📄 {img.name} ({size / 1024:.1f} KB)")
+
+    if total_files == 0:
+        print("\n✅ 没有找到需要删除的图片文件")
+        return
+
+    print("\n" + "=" * 60)
+    print(f"📊 共找到 {total_files} 个图片文件")
+    print(f"📦 总大小: {total_size / 1024 / 1024:.2f} MB")
+
+    if args.dry_run:
+        print("\n💡 预览模式，加上 --execute 参数执行删除")
+        print("   python scripts/clean_skill_images.py --execute")
+        return
+
+    print("\n⚠️  确认删除? (输入 y 确认)")
+    confirm = input("> ").strip().lower()
+    if confirm != 'y':
+        print("❌ 已取消")
+        return
+
+    print("\n🔄 执行删除...")
+    deleted = 0
+    for skill_file in skills_dir.glob("*/skill.py"):
+        skill_dir = skill_file.parent
+        for ext in IMAGE_EXTS:
+            for img in skill_dir.glob(f"*{ext}"):
+                if "output" in img.parts:
+                    continue
+                try:
+                    img.unlink()
+                    print(f"  ✅ 删除: {img.parent.name}/{img.name}")
+                    deleted += 1
+                except Exception as e:
+                    print(f"  ❌ 删除失败: {img.name} - {e}")
+
+    print("\n" + "=" * 60)
+    print(f"✅ 完成! 删除了 {deleted} 个图片文件")
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+文件: scripts\fix_missing_time.py
+语言: Python
+行数: 149
+大小: 3.9 KB
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+批量修复技能文件缺少 import time 的问题
+"""
+
+import re
+from pathlib import Path
+
+skills_dir = Path("skills")
+
+# 需要修复的技能列表（从检查脚本获取）
+SKILLS_TO_FIX = [
+    "add_animal_ears",
+    "add_background_objects",
+    "add_glasses",
+    "add_tattoo",
+    "anime_to_real",
+    "change_age",
+    "change_body_type",
+    "change_clothing_style",
+    "change_expression",
+    "change_eye_color",
+    "change_face",
+    "change_furniture",
+    "change_gender",
+    "change_hair",
+    "change_lighting",
+    "change_makeup",
+    "change_nationality",
+    "change_perspective",
+    "change_skin_tone",
+    "colorize_sketch",
+    "day_night_transfer",
+    "old_photo_restore",
+    "real_to_anime",
+    "remove_object",
+    "replace_object",
+    "season_transfer",
+    "style_transfer",
+    "weather_transfer",
+]
+
+
+def fix_time_import(skill_path: Path) -> bool:
+    """在文件开头添加 import time"""
+    if not skill_path.exists():
+        print(f"  ❌ 文件不存在: {skill_path}")
+        return False
+
+    content = skill_path.read_text(encoding='utf-8')
+
+    # 检查是否已有 import time
+    if "import time" in content:
+        print(f"  ⏭️  {skill_path.parent.name} 已有 import time")
+        return False
+
+    # 在文件顶部添加 import time（在 docstring 之后，其他 import 之前）
+    lines = content.split("\n")
+
+    # 找到插入位置：跳过 shebang、docstring、空行
+    insert_pos = 0
+    in_docstring = False
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        # 跳过 shebang
+        if stripped.startswith("#!") and i == 0:
+            insert_pos = i + 1
+            continue
+
+        # 处理 docstring
+        if stripped.startswith('"""') or stripped.startswith("'''"):
+            if in_docstring:
+                in_docstring = False
+                insert_pos = i + 1
+                continue
+            else:
+                in_docstring = True
+                insert_pos = i + 1
+                continue
+
+        if in_docstring:
+            insert_pos = i + 1
+            continue
+
+        # 跳过空行
+        if not stripped:
+            insert_pos = i + 1
+            continue
+
+        # 跳过注释
+        if stripped.startswith("#"):
+            insert_pos = i + 1
+            continue
+
+        # 找到第一个非注释、非空行（通常是 import）
+        insert_pos = i
+        break
+
+    # 插入 import time
+    lines.insert(insert_pos, "import time")
+    new_content = "\n".join(lines)
+
+    skill_path.write_text(new_content, encoding='utf-8')
+    print(f"  ✅ {skill_path.parent.name} 已添加 import time")
+    return True
+
+
+def main():
+    print("=" * 60)
+    print("🔧 批量修复缺少 import time 的技能")
+    print("=" * 60)
+
+    if not skills_dir.exists():
+        print(f"❌ skills 目录不存在: {skills_dir}")
+        return
+
+    fixed_count = 0
+
+    for skill_name in SKILLS_TO_FIX:
+        skill_file = skills_dir / skill_name / "skill.py"
+        if fix_time_import(skill_file):
+            fixed_count += 1
+
+    print("=" * 60)
+    print(f"✅ 完成! 修复了 {fixed_count} 个技能")
+    print("=" * 60)
+
+    # 再次检查是否还有遗漏
+    print("\n🔍 再次检查...")
+    missing = []
+    for skill_file in skills_dir.glob("*/skill.py"):
+        content = skill_file.read_text(encoding='utf-8')
+        if ("time.time()" in content or "time.sleep(" in content):
+            if "import time" not in content:
+                missing.append(skill_file.parent.name)
+
+    if missing:
+        print("⚠️ 仍有技能缺少 import time:")
+        for name in missing:
+            print(f"  - {name}")
+    else:
+        print("✅ 所有技能都已正确导入 time")
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+文件: scripts\fix_param_passthrough.py
+语言: Python
+行数: 191
+大小: 6.4 KB
+--------------------------------------------------------------------------------
+
+# scripts/fix_param_passthrough.py
+"""
+批量修复所有技能，添加 **kwargs 参数透传
+用法: python scripts/fix_param_passthrough.py
+      python scripts/fix_param_passthrough.py --dry-run  # 预览模式
+      python scripts/fix_param_passthrough.py --skill change_clothes  # 只修复指定技能
+"""
+
+import re
+import argparse
+from pathlib import Path
+from typing import List, Tuple, Set
+
+# 配置
+SKILLS_DIR = Path("skills")
+SKIP_SKILLS = {
+    "controlnet_img2img",  # 核心技能，已手动修改
+    "sd_image_generator",  # 文生图，不调用 controlnet
+}
+
+
+def find_skills_to_fix() -> List[Path]:
+    """找出所有需要修复的技能"""
+    skills = []
+    if not SKILLS_DIR.exists():
+        print(f"❌ skills 目录不存在: {SKILLS_DIR}")
+        return skills
+    
+    for skill_dir in SKILLS_DIR.iterdir():
+        if not skill_dir.is_dir():
+            continue
+        if skill_dir.name in SKIP_SKILLS:
+            continue
+        
+        skill_file = skill_dir / "skill.py"
+        if skill_file.exists():
+            skills.append(skill_file)
+    
+    return skills
+
+
+def fix_skill_file(skill_file: Path, dry_run: bool = False) -> Tuple[bool, int]:
+    """
+    修复单个技能文件
+    返回: (是否修改, 修改次数)
+    """
+    content = skill_file.read_text(encoding='utf-8')
+    original = content
+    changes = 0
+    
+    # ============================================================
+    # 修复 1: execute 方法签名添加 **kwargs
+    # ============================================================
+    # 匹配: def execute(self, ...):
+    # 需要处理各种情况:
+    #   - def execute(self, image_path: str, output_path: str = None):
+    #   - def execute(self, image_path, output_path=None):
+    #   - def execute(self, **kwargs):
+    #   - def execute(self):
+    
+    def fix_execute_signature(match):
+        nonlocal changes
+        indent = match.group(1)  # 缩进
+        params = match.group(2).strip()
+        
+        # 如果已经有 **kwargs，跳过
+        if '**kwargs' in params:
+            return match.group(0)
+        
+        # 构建新参数
+        if params == '' or params == 'self':
+            new_params = 'self, **kwargs'
+        else:
+            # 检查是否以逗号结尾
+            if params.endswith(','):
+                new_params = f'{params} **kwargs'
+            else:
+                new_params = f'{params}, **kwargs'
+        
+        new_line = f'{indent}def execute({new_params}):'
+        changes += 1
+        return new_line
+    
+    # 使用更精确的正则匹配 execute 方法定义
+    pattern1 = r'(\s*)def\s+execute\s*\(([^)]*)\)\s*:'
+    content = re.sub(pattern1, fix_execute_signature, content)
+    
+    # ============================================================
+    # 修复 2: 调用 execute_skill("controlnet_img2img", ...) 添加 **kwargs
+    # ============================================================
+    # 匹配各种调用形式:
+    #   execute_skill("controlnet_img2img", image_path=image_path)
+    #   execute_skill("controlnet_img2img", image_path=image_path, prompt=prompt)
+    #   execute_skill( "controlnet_img2img", ... )
+    
+    def fix_execute_call(match):
+        nonlocal changes
+        prefix = match.group(1)
+        args = match.group(2)
+        
+        # 如果已经有 **kwargs，跳过
+        if '**kwargs' in args:
+            return match.group(0)
+        
+        # 检查是否以逗号结尾
+        if args.endswith(','):
+            new_args = f'{args} **kwargs'
+        else:
+            new_args = f'{args}, **kwargs'
+        
+        changes += 1
+        return f'{prefix}execute_skill("controlnet_img2img", {new_args})'
+    
+    # 匹配 execute_skill 调用（支持跨行）
+    pattern2 = r'(\s*)execute_skill\s*\(\s*["\']controlnet_img2img["\']\s*,\s*([^)]*(?:\([^)]*\)[^)]*)*?)\)'
+    
+    # 由于跨行匹配复杂，先用简单版本
+    content = re.sub(pattern2, fix_execute_call, content, flags=re.DOTALL)
+    
+    # ============================================================
+    # 修复 3: 如果内容有变化，保存
+    # ============================================================
+    if content != original:
+        if not dry_run:
+            skill_file.write_text(content, encoding='utf-8')
+        return True, changes
+    
+    return False, 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="批量修复技能参数透传")
+    parser.add_argument("--dry-run", "-d", action="store_true", help="预览模式，不实际修改")
+    parser.add_argument("--skill", "-s", type=str, help="只修复指定技能")
+    parser.add_argument("--verbose", "-v", action="store_true", help="显示详细信息")
+    args = parser.parse_args()
+    
+    print("=" * 60)
+    print("🔧 批量修复技能参数透传")
+    if args.dry_run:
+        print("📋 预览模式 (不会修改文件)")
+    print("=" * 60)
+    
+    # 找到要修复的技能
+    if args.skill:
+        skill_file = SKILLS_DIR / args.skill / "skill.py"
+        if not skill_file.exists():
+            print(f"❌ 技能不存在: {args.skill}")
+            return
+        skill_files = [skill_file]
+    else:
+        skill_files = find_skills_to_fix()
+    
+    if not skill_files:
+        print("❌ 没有找到需要修复的技能")
+        return
+    
+    print(f"📁 找到 {len(skill_files)} 个技能需要检查")
+    print("-" * 60)
+    
+    # 执行修复
+    fixed = []
+    total_changes = 0
+    
+    for skill_file in skill_files:
+        skill_name = skill_file.parent.name
+        fixed_flag, changes = fix_skill_file(skill_file, args.dry_run)
+        
+        if fixed_flag:
+            fixed.append((skill_name, changes))
+            total_changes += changes
+            print(f"  ✅ {skill_name} ({changes} 处修改)")
+        elif args.verbose:
+            print(f"  ⏭️  {skill_name} (无需修改)")
+    
+    # 总结
+    print("-" * 60)
+    print(f"📊 修改了 {len(fixed)} 个技能, 共 {total_changes} 处修改")
+    
+    if fixed:
+        print(f"   修改列表: {', '.join([s for s, _ in fixed])}")
+    
+    if args.dry_run:
+        print("\n💡 预览完成，去掉 --dry-run 参数执行实际修改")
+        print("   python scripts/fix_param_passthrough.py")
+    
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+文件: scripts\generate_girl_series.py
+语言: Python
+行数: 229
+大小: 9.0 KB
+--------------------------------------------------------------------------------
+
+# scripts/generate_girl_series.py
+"""
+给 input/ 目录下所有图片批量生成系列图
+自动组合不同的背景、姿势、表情、服装等技能
+"""
+
+import sys
+import time
+from pathlib import Path
+import argparse
+
+# 添加项目根目录
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from markflow.cli.commands import execute_skill
+
+# ========== 导入预处理 ==========
+import preprocess_image
+from preprocess_image import resize_image, SCALE_MODES
+
+
+# ==================== 配置 ====================
+INPUT_DIR = Path("input")               # 输入目录
+OUTPUT_ROOT = Path("output")            # 统一输出目录
 OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
-# 批量任务列表：每个任务包含（技能名称，参数）
+# ========== 预处理配置（档位模式） ==========
+PREPROCESS_ENABLED = True               # 是否启用预处理
+PREPROCESS_MODE = 3                     # 档位: 0-10 (3=512px 标准)
+PREPROCESS_MAX_SIZE = SCALE_MODES[PREPROCESS_MODE]["size"]
+PREPROCESS_OVERWRITE = True             # 是否覆盖原图
+
+
+def preprocess_image_file(input_path: Path):
+    """预处理单张图片 - 检查短边是否已符合目标"""
+    if not PREPROCESS_ENABLED:
+        return input_path
+    
+    if not input_path.exists():
+        print(f"⚠️ 图片不存在: {input_path}")
+        return input_path
+    
+    # 检查图片尺寸是否已经符合目标
+    try:
+        from PIL import Image
+        img = Image.open(input_path)
+        w, h = img.size
+        short_side = min(w, h)
+        
+        # 如果短边已经等于或小于 max_size，说明已经缩放过了
+        if short_side <= PREPROCESS_MAX_SIZE:
+            print(f"   ⏭️ 已缩放: {input_path.name} ({w}x{h}, 短边 {short_side} ≤ {PREPROCESS_MAX_SIZE})")
+            return input_path
+    except Exception as e:
+        print(f"   ⚠️ 无法读取图片尺寸: {e}")
+    
+    mode_name = SCALE_MODES[PREPROCESS_MODE]["name"]
+    print(f"   📐 缩放: {input_path.name} ({PREPROCESS_MODE}: {mode_name} {PREPROCESS_MAX_SIZE}px)")
+    result = resize_image(
+        input_path, 
+        max_size=PREPROCESS_MAX_SIZE,
+        overwrite=PREPROCESS_OVERWRITE
+    )
+    
+    return Path(result) if result else input_path
+
+# ==================== 批量任务列表 ====================
 GENERATION_TASKS = [
     # ========== 1. 换背景系列 ==========
     {"skill": "change_background", "params": {"preset": "beach", "strength": 0.55}},
@@ -5842,7 +6657,7 @@ GENERATION_TASKS = [
     {"skill": "add_glasses", "params": {"style": "round", "strength": 0.35}},
     {"skill": "add_animal_ears", "params": {"animal": "cat", "strength": 0.55}},
 
-    # ========== 6. 多技能复杂组合（换背景+换姿态） ==========
+    # ========== 6. 多技能复杂组合 ==========
     {"skill": "expand_to_full_body", "params": {"prompt": "a beautiful elegant woman standing, full body", "controlnet_type": "openpose"}},
     {"skill": "style_transfer", "params": {"style": "oil_painting", "strength": 0.75}},
     {"skill": "style_transfer", "params": {"style": "watercolor", "strength": 0.75}},
@@ -5852,50 +6667,126 @@ GENERATION_TASKS = [
 ]
 
 
-def main():
-    print(f"📸 准备为 {REFERENCE_IMAGE} 生成 {len(GENERATION_TASKS)} 张系列图...")
-    print(f"💾 输出目录: {OUTPUT_ROOT}")
-
+def process_single_image(image_path: Path, image_index: int, total_images: int):
+    """处理单张图片的所有任务"""
+    print(f"\n{'='*60}")
+    print(f"📸 处理图片 [{image_index}/{total_images}]: {image_path.name}")
+    print('='*60)
+    
+    # 预处理图片
+    processed_path = preprocess_image_file(image_path)
+    
     success_count = 0
-
+    total_tasks = len(GENERATION_TASKS)
+    
     for idx, task in enumerate(GENERATION_TASKS, 1):
         skill_name = task['skill']
-        params = task['params']
-
-        # 自动生成输出文件名
-        safe_name = f"{idx:02d}_{skill_name.replace('_', '-')}"
+        params = task['params'].copy()
+        
+        # 生成输出文件名: 图片名_任务序号_技能名.png
+        base_name = image_path.stem
+        safe_name = f"{base_name}_{idx:02d}_{skill_name.replace('_', '-')}"
         output_path = str(OUTPUT_ROOT / f"{safe_name}.png")
-
-        # 统一注入参数
-        params['image_path'] = REFERENCE_IMAGE
+        
+        # 注入参数
+        params['image_path'] = str(processed_path)
         params['output_path'] = output_path
-
-        print(f"\n[{idx}/{len(GENERATION_TASKS)}] 🚀 正在调用: {skill_name}")
-        print(f"    📝 参数: {params}")
-
+        
+        print(f"\n  [{idx}/{total_tasks}] 🚀 调用: {skill_name}")
+        
         try:
             result = execute_skill(skill_name, **params)
-
+            
             if isinstance(result, dict) and result.get('status') == 'success':
-                print(f"    ✅ 成功! 保存至: {result.get('output_path')}")
+                print(f"      ✅ 成功: {output_path}")
                 success_count += 1
             else:
-                # 打印错误详情
-                if isinstance(result, dict):
-                    print(f"    ❌ 失败: {result.get('error', '未知错误')}")
-                else:
-                    print(f"    ❌ 失败: {result}")
-
+                error = result.get('error', '未知错误') if isinstance(result, dict) else str(result)
+                print(f"      ❌ 失败: {error}")
+                
         except Exception as e:
-            print(f"    ❌ 执行异常: {e}")
+            print(f"      ❌ 异常: {e}")
             import traceback
             traceback.print_exc()
+        
+        time.sleep(0.5)
+    
+    return success_count, total_tasks
 
-        # 等待一下防止连续调用太吃内存
-        time.sleep(1)
 
-    print(f"\n🎉 批量生成结束！成功 {success_count}/{len(GENERATION_TASKS)} 张。")
-    print(f"📂 所有生成的图片已保存在: {OUTPUT_ROOT}")
+def main():
+    # ========== 解析命令行参数 ==========
+    parser = argparse.ArgumentParser(description="批量生成女孩系列图")
+    parser.add_argument("--image", "-i", type=str, help="指定要处理的图片文件名 (如: girl.jpg)")
+    parser.add_argument("--first", "-f", action="store_true", help="只处理第一张图片")
+    parser.add_argument("--all", "-a", action="store_true", help="处理所有图片 (默认行为)")
+    args = parser.parse_args()
+    
+    # 收集所有图片
+    extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
+    images = [f for f in INPUT_DIR.iterdir() if f.suffix.lower() in extensions]
+    
+    # 排除已缩放的图片
+    images = [f for f in images if '_resized' not in f.stem]
+    
+    if not images:
+        print(f"❌ 在 {INPUT_DIR} 中未找到图片")
+        return
+    
+    # 排序
+    images.sort()
+    
+    # ========== 根据参数筛选图片 ==========
+    if args.image:
+        # 查找指定的图片
+        target = INPUT_DIR / args.image
+        if not target.exists():
+            # 如果没有扩展名，自动尝试添加
+            for ext in extensions:
+                test_path = INPUT_DIR / f"{args.image}{ext}"
+                if test_path.exists():
+                    target = test_path
+                    break
+        
+        if target.exists():
+            images = [target]
+            print(f"📌 指定图片: {target.name}")
+        else:
+            print(f"❌ 未找到指定图片: {args.image}")
+            print(f"💡 可用的图片:")
+            for img in images:
+                print(f"   - {img.name}")
+            return
+    elif args.first:
+        images = images[:1]
+        print(f"📌 只处理第一张: {images[0].name}")
+    elif args.all:
+        print(f"📌 处理所有 {len(images)} 张图片")
+    else:
+        # 默认行为：处理所有图片
+        print(f"📌 处理所有 {len(images)} 张图片")
+    
+    print(f"📸 找到 {len(images)} 张图片")
+    print(f"💾 输出目录: {OUTPUT_ROOT}")
+    print(f"📐 档位 {PREPROCESS_MODE}: {SCALE_MODES[PREPROCESS_MODE]['name']} ({PREPROCESS_MAX_SIZE}px)")
+    print(f"📋 每张图片执行 {len(GENERATION_TASKS)} 个任务")
+    print(f"📊 总计: {len(images) * len(GENERATION_TASKS)} 次生成")
+    print("=" * 60)
+    
+    total_success = 0
+    total_all = 0
+    
+    for idx, img_path in enumerate(images, 1):
+        success, total = process_single_image(img_path, idx, len(images))
+        total_success += success
+        total_all += total
+    
+    print(f"\n{'='*60}")
+    print(f"🎉 全部完成！")
+    print(f"   📸 图片: {len(images)} 张")
+    print(f"   ✅ 成功: {total_success}/{total_all} 次")
+    print(f"   📂 输出: {OUTPUT_ROOT}")
+    print('='*60)
 
 
 if __name__ == "__main__":
@@ -5905,8 +6796,8 @@ if __name__ == "__main__":
 ================================================================================
 文件: scripts\generate_images.py
 语言: Python
-行数: 1042
-大小: 40.8 KB
+行数: 1112
+大小: 43.6 KB
 --------------------------------------------------------------------------------
 
 #!/usr/bin/env python
@@ -6250,7 +7141,8 @@ class PromptCombinator:
 
 class SDImageGenerator:
     def __init__(self, config_path: str = None, source: str = None, auto_load: bool = True,
-                 style_filter: str = None, folder_filter: str = None, limit: int = None):
+                 style_filter: str = None, folder_filter: str = None, limit: int = None,
+                 model_name: str = None, lora_config: str = None, max_size: int = None):  # 新增 max_size
         self.base_dir = Path(__file__).parent.parent
         self.schemes = []
         self.output_dir = None
@@ -6260,6 +7152,29 @@ class SDImageGenerator:
         self.folder_filter = folder_filter
         self.limit = limit
         self._call_count = 0
+
+        # ========== 新增：模型覆盖 ==========
+        self._override_model = model_name
+        if model_name:
+            print(f"📌 临时使用模型: {model_name}")
+        
+        # ========== 新增：LoRA 覆盖 ==========
+        self._lora_weights = {}
+        if lora_config:
+            for item in lora_config.split(','):
+                item = item.strip()
+                if ':' in item:
+                    name, weight = item.split(':')
+                    self._lora_weights[name.strip()] = float(weight.strip())
+                else:
+                    self._lora_weights[item] = 0.8
+            if self._lora_weights:
+                print(f"📌 临时使用 LoRA: {self._lora_weights}")
+
+        # ========== 新增：最大尺寸限制 ==========
+        self._max_size = max_size
+        if max_size:
+            print(f"📐 限制最大尺寸: {max_size}px")
         
         # ✅ 加载统一配置
         self.sd_config = get_sd_config()
@@ -6454,8 +7369,12 @@ class SDImageGenerator:
     def _get_model_name(self, scheme_model: Optional[str] = None) -> str:
         """
         获取模型名称
-        优先级: scheme 中指定 > 统一配置 > 回退值
+        优先级: 命令行指定 > scheme 中指定 > 统一配置 > 回退值
         """
+        # 如果命令行指定了模型，优先使用
+        if self._override_model:
+            return self._override_model
+        
         # 如果 scheme 指定了模型，使用它
         if scheme_model:
             return scheme_model
@@ -6480,6 +7399,31 @@ class SDImageGenerator:
             return scheme_cfg
         return self.sd_config.get('default_cfg', 7.5)
     
+
+    def _apply_max_size(self, width: int, height: int) -> tuple:
+        """应用最大尺寸限制（保持宽高比）"""
+        if not self._max_size:
+            return width, height
+        
+        # 如果已经小于最大尺寸，不处理
+        if width <= self._max_size and height <= self._max_size:
+            return width, height
+        
+        # 计算缩放比例
+        if width > height:
+            scale = self._max_size / width
+        else:
+            scale = self._max_size / height
+        
+        new_w = int(width * scale)
+        new_h = int(height * scale)
+        
+        # 对齐到 64 的倍数
+        new_w = ((new_w + 31) // 64) * 64
+        new_h = ((new_h + 31) // 64) * 64
+        
+        return new_w, new_h
+        
     # ==================== 生成方法 ====================
     
     def generate_one(self, scheme, index: int = None, total: int = None):
@@ -6520,8 +7464,14 @@ class SDImageGenerator:
         steps = self._get_steps(params.get('steps'))
         cfg_scale = self._get_cfg_scale(params.get('cfg_scale'))
         
+        # ========== 新增：应用最大尺寸限制 ==========
+        width = params.get('width', 512)
+        height = params.get('height', 768)
+        width, height = self._apply_max_size(width, height)
+        
         print(f"📦 使用模型: {model_name}")
         print(f"⚙️  步数: {steps}, CFG: {cfg_scale}")
+        print(f"📐 尺寸: {width}x{height}")
         print(f"📝 提示词: {prompt[:80]}...")
         
         try:
@@ -6530,8 +7480,8 @@ class SDImageGenerator:
                 prompt=prompt,
                 negative_prompt=negative_prompt,
                 model_name=model_name,
-                width=params.get('width', 512),
-                height=params.get('height', 768),
+                width=width,
+                height=height,
                 steps=steps,
                 cfg_scale=cfg_scale,
                 seed=seed,
@@ -6569,7 +7519,7 @@ class SDImageGenerator:
             import traceback
             traceback.print_exc()
             return False
-    
+            
     def list_schemes(self):
         """列出所有方案"""
         if not self.schemes:
@@ -6918,6 +7868,14 @@ def main():
     parser.add_argument("--limit", type=int, help="每个风格最多生成 N 个组合")
     parser.add_argument("--total", type=int, help="总共生成 N 张图片（取前 N 个）")
     
+    # ========== 新增：模型管理参数 ==========
+    parser.add_argument("--model", type=str, help="指定底模名称（临时覆盖配置）")
+    parser.add_argument("--lora", type=str, help="指定 LoRA 名称，如 'lora_000004:0.7,aesthetic_anime:0.9'")
+    
+    # ========== 新增：尺寸限制参数 ==========
+    parser.add_argument("--max-size", type=int, default=768, 
+                       help="限制最大边长 (默认: 768, 推荐 512-768)")
+    
     # ========== 衣服移除参数 ==========
     parser.add_argument("--remove-clothes", action="store_true", help="进入衣服移除模式")
     parser.add_argument("--input", type=str, help="输入图片路径或目录")
@@ -6944,10 +7902,13 @@ def main():
         args.config, args.source, auto_load=True,
         style_filter=args.style,
         folder_filter=args.folder,
-        limit=args.limit
+        limit=args.limit,
+        model_name=args.model,      # 新增
+        lora_config=args.lora,      # 新增
+        max_size=args.max_size      # 新增
     )
     generator.run(args)
-
+    
 
 if __name__ == "__main__":
     main()
@@ -7518,6 +8479,384 @@ if __name__ == "__main__":
         generate_all()
     else:
         generate_readme(sys.argv[1])
+
+
+================================================================================
+文件: scripts\generate_special.py
+语言: Python
+行数: 369
+大小: 18.0 KB
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+特殊内容文生图批量生成器
+支持：卧室裸露/内衣、海滩、工作室、泳池、浴室、油画、雕塑等
+
+用法：
+  python scripts/generate_special.py --list                    # 列出所有模板
+  python scripts/generate_special.py --template bedroom_nude   # 生成指定模板
+  python scripts/generate_special.py --all                    # 生成所有模板
+  python scripts/generate_special.py --batch 5                # 批量生成多张
+  python scripts/generate_special.py --seed 42                # 固定种子
+"""
+
+import sys
+import os
+import json
+import argparse
+import time
+import random
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Optional
+
+# 添加项目根目录
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from markflow.cli.commands import execute_skill
+from markflow.utils.model_config import get_model_config
+
+
+# ==================== 模板定义 ====================
+
+TEMPLATES = {
+    # ===== 卧室系列 =====
+    "bedroom_nude": {
+        "name": "卧室裸露",
+        "category": "卧室",
+        "prompt": "1girl, full body, facing viewer, beautiful face, perfect body, large bust, hourglass figure, nude, naked, beautiful skin, realistic skin texture, lying on a large bed, soft mattress, white sheets, sideways, relaxed pose, one hand on chest, bedroom background, soft lighting, warm atmosphere, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, clothes, fabric",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    "bedroom_lingerie": {
+        "name": "卧室唯美内衣",
+        "category": "卧室",
+        "prompt": "1girl, full body, facing viewer, beautiful face, perfect body, large bust, hourglass figure, white lace lingerie, delicate lace, elegant, lying on a large bed, soft mattress, white sheets, sideways, relaxed pose, bedroom background, soft lighting, warm atmosphere, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    
+    # ===== 海滩系列 =====
+    "beach_nude": {
+        "name": "海滩裸露",
+        "category": "海滩",
+        "prompt": "1girl, full body, facing viewer, beautiful face, perfect body, large bust, hourglass figure, nude, naked, beautiful skin, standing on a beautiful sandy beach, ocean waves in background, confident posture, hands on hips, beach background, sunny day, golden sunlight, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, clothes, fabric",
+        "params": {"width": 1024, "height": 768, "steps": 30, "cfg_scale": 7.0}
+    },
+    "beach_lingerie": {
+        "name": "海滩唯美内衣",
+        "category": "海滩",
+        "prompt": "1girl, full body, facing viewer, beautiful face, perfect body, large bust, hourglass figure, white lace lingerie, delicate lace, elegant, standing on a beautiful sandy beach, ocean waves in background, confident posture, beach background, sunny day, golden sunlight, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality",
+        "params": {"width": 1024, "height": 768, "steps": 30, "cfg_scale": 7.0}
+    },
+    
+    # ===== 工作室系列 =====
+    "studio_nude": {
+        "name": "工作室裸露",
+        "category": "工作室",
+        "prompt": "1girl, full body, facing viewer, beautiful face, perfect body, large bust, hourglass figure, nude, naked, beautiful skin, realistic skin texture, standing upright, soft studio lighting, gentle shadows, professional studio background, clean background, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, clothes, fabric",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    "studio_lingerie": {
+        "name": "工作室唯美内衣",
+        "category": "工作室",
+        "prompt": "1girl, full body, facing viewer, beautiful face, perfect body, large bust, hourglass figure, black silk lingerie, glossy silk, sophisticated, standing upright, soft studio lighting, gentle shadows, professional studio background, clean background, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    
+    # ===== 泳池系列 =====
+    "pool_nude": {
+        "name": "泳池裸露",
+        "category": "泳池",
+        "prompt": "1girl, full body, beautiful face, perfect body, large bust, hourglass figure, nude, naked, beautiful skin, wet skin, water droplets on skin, standing in pool, water up to waist, swimming pool background, blue water, bright sunlight, sparkling water, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, clothes, fabric",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    "pool_lingerie": {
+        "name": "泳池唯美内衣",
+        "category": "泳池",
+        "prompt": "1girl, full body, beautiful face, perfect body, large bust, hourglass figure, pink satin lingerie, soft satin, romantic, standing in pool, water up to waist, swimming pool background, blue water, bright sunlight, sparkling water, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    
+    # ===== 浴室系列 =====
+    "bathroom_nude": {
+        "name": "浴室裸露",
+        "category": "浴室",
+        "prompt": "1girl, full body, beautiful face, perfect body, large bust, hourglass figure, nude, naked, beautiful skin, wet skin, water droplets, standing in shower, water flowing, steamy bathroom, foggy mirrors, warm mist, bathroom interior, tiles, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, clothes, fabric",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    "bathroom_lingerie": {
+        "name": "浴室唯美内衣",
+        "category": "浴室",
+        "prompt": "1girl, full body, beautiful face, perfect body, large bust, hourglass figure, blue lace lingerie, delicate lace, elegant, standing in shower, water flowing, steamy bathroom, foggy mirrors, warm mist, bathroom interior, tiles, high quality, masterpiece, 8k, photorealistic",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    
+    # ===== 油画系列 =====
+    "oil_painting_classical": {
+        "name": "古典油画裸体",
+        "category": "油画",
+        "prompt": "1girl, full body, nude, oil painting, canvas texture, classical oil painting, Renaissance style, soft chiaroscuro, warm earth tones, standing upright, classical contrapposto, studio lighting, soft shadows, artistic, fine art, high quality, masterpiece",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, cartoon, anime, digital art, 3d render, plastic",
+        "params": {"width": 768, "height": 1024, "steps": 35, "cfg_scale": 7.5}
+    },
+    "oil_painting_realistic": {
+        "name": "写实油画裸体",
+        "category": "油画",
+        "prompt": "1girl, full body, nude, oil painting, canvas texture, photorealistic oil painting, ultra detailed, smooth blending, lifelike skin texture, reclining on couch, elegant pose, warm golden lighting, intimate atmosphere, artistic, fine art, high quality, masterpiece",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, cartoon, anime, digital art, 3d render, plastic",
+        "params": {"width": 1024, "height": 768, "steps": 35, "cfg_scale": 7.5}
+    },
+    
+    # ===== 雕塑系列 =====
+    "sculpture_marble": {
+        "name": "大理石雕塑裸体",
+        "category": "雕塑",
+        "prompt": "1girl, full body, nude, sculpture, 3D statue, white marble sculpture, smooth polished surface, translucent effect, classical Greek sculpture, idealized proportions, standing upright, elegant posture, pedestal, museum lighting, high quality, masterpiece, 8k, photorealistic 3D render",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, cartoon, anime, digital art, painting, drawing",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+    "sculpture_bronze": {
+        "name": "青铜雕塑裸体",
+        "category": "雕塑",
+        "prompt": "1girl, full body, nude, sculpture, 3D statue, bronze sculpture, patina texture, greenish-brown tones, aged metal, Hellenistic sculpture, dramatic emotion, dynamic pose, pedestal, museum lighting, high quality, masterpiece, 8k, photorealistic 3D render",
+        "negative": "ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, cartoon, anime, digital art, painting, drawing",
+        "params": {"width": 768, "height": 1024, "steps": 30, "cfg_scale": 7.0}
+    },
+}
+
+
+def get_sd_config():
+    """获取 SD 配置"""
+    cfg = get_model_config()
+    return {
+        "model_path": cfg.get("model_path"),
+        "model_name": cfg.get("model_name"),
+        "device": cfg.get("device", "cpu"),
+        "steps": cfg.get("default_steps", 25),
+        "cfg_scale": cfg.get("default_cfg", 7.5),
+    }
+
+
+class SpecialGenerator:
+    """特殊内容文生图生成器"""
+    
+    def __init__(self, output_dir: str = "./output/special"):
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.sd_config = get_sd_config()
+        
+        print(f"📁 输出目录: {self.output_dir}")
+        print(f"📦 当前模型: {self.sd_config.get('model_name', '未设置')}")
+        print(f"💻 设备: {self.sd_config.get('device', 'cpu')}")
+        print()
+    
+    def list_templates(self):
+        """列出所有模板"""
+        print("\n" + "=" * 70)
+        print("📋 可用模板列表")
+        print("=" * 70)
+        
+        categories = {}
+        for key, template in TEMPLATES.items():
+            cat = template.get("category", "其他")
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append((key, template))
+        
+        for cat, items in categories.items():
+            print(f"\n【{cat}】")
+            for key, template in items:
+                print(f"  {key:<30} {template['name']}")
+        
+        print("\n" + "=" * 70)
+        print(f"共 {len(TEMPLATES)} 个模板")
+    
+    def generate_one(self, template_key: str, seed: int = None, batch_size: int = 1) -> Dict:
+        """生成单个模板"""
+        if template_key not in TEMPLATES:
+            return {"status": "error", "error": f"未知模板: {template_key}"}
+        
+        template = TEMPLATES[template_key]
+        params = template.get("params", {})
+        
+        prompt = template["prompt"]
+        negative = template.get("negative", "")
+        
+        # 处理种子
+        if seed is None or seed == -1:
+            seed = random.randint(0, 2**32 - 1)
+        
+        # 获取模型配置
+        model_name = self.sd_config.get("model_name")
+        steps = params.get("steps", self.sd_config.get("default_steps", 25))
+        cfg_scale = params.get("cfg_scale", self.sd_config.get("default_cfg", 7.5))
+        width = params.get("width", 512)
+        height = params.get("height", 768)
+        
+        print(f"\n{'='*60}")
+        print(f"🎨 生成: {template['name']}")
+        print(f"📝 模板: {template_key}")
+        print(f"📐 尺寸: {width}x{height}")
+        print(f"⚙️  步数: {steps}, CFG: {cfg_scale}")
+        print(f"🌱 种子: {seed}")
+        print(f"📦 模型: {model_name}")
+        print('='*60)
+        
+        # 生成文件名
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{timestamp}_{template_key}_{seed}.png"
+        output_path = str(self.output_dir / filename)
+        
+        try:
+            result = execute_skill(
+                "sd_image_generator",
+                prompt=prompt,
+                negative_prompt=negative,
+                model_name=model_name,
+                width=width,
+                height=height,
+                steps=steps,
+                cfg_scale=cfg_scale,
+                seed=seed,
+                batch_size=batch_size,
+                output_path=output_path
+            )
+            
+            if isinstance(result, dict) and result.get('status') == 'success':
+                image_paths = result.get('image_paths', [output_path])
+                print(f"\n✅ 生成成功!")
+                for path in image_paths:
+                    print(f"   📁 {path}")
+                return {
+                    "status": "success",
+                    "template": template_key,
+                    "name": template['name'],
+                    "image_paths": image_paths,
+                    "seed": seed
+                }
+            else:
+                error = result.get('error', '未知错误') if isinstance(result, dict) else str(result)
+                print(f"\n❌ 生成失败: {error}")
+                return {"status": "error", "error": error, "template": template_key}
+                
+        except Exception as e:
+            print(f"\n❌ 生成异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"status": "error", "error": str(e), "template": template_key}
+    
+    def generate_all(self, seed: int = None):
+        """生成所有模板"""
+        print(f"\n{'='*60}")
+        print(f"🚀 生成所有模板 (共 {len(TEMPLATES)} 个)")
+        print('='*60)
+        
+        results = []
+        success_count = 0
+        
+        for key in TEMPLATES:
+            result = self.generate_one(key, seed)
+            results.append(result)
+            if result.get('status') == 'success':
+                success_count += 1
+            time.sleep(1)  # 避免API限制
+        
+        print(f"\n{'='*60}")
+        print(f"📊 完成! 成功: {success_count}/{len(TEMPLATES)}")
+        print('='*60)
+        
+        return results
+    
+    def generate_batch(self, template_key: str, count: int = 5, seed: int = None):
+        """批量生成同一模板多张"""
+        print(f"\n{'='*60}")
+        print(f"🚀 批量生成: {TEMPLATES[template_key]['name']}")
+        print(f"📊 数量: {count}")
+        print('='*60)
+        
+        results = []
+        success_count = 0
+        
+        for i in range(count):
+            print(f"\n--- [{i+1}/{count}] ---")
+            # 每个种子不同
+            current_seed = seed + i if seed is not None else None
+            result = self.generate_one(template_key, current_seed)
+            results.append(result)
+            if result.get('status') == 'success':
+                success_count += 1
+            time.sleep(0.5)
+        
+        print(f"\n{'='*60}")
+        print(f"📊 完成! 成功: {success_count}/{count}")
+        print('='*60)
+        
+        return results
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="特殊内容文生图批量生成器",
+        epilog="""
+示例:
+  python scripts/generate_special.py --list                           # 列出所有模板
+  python scripts/generate_special.py --template bedroom_nude         # 生成卧室裸露
+  python scripts/generate_special.py --template bedroom_nude --seed 42 # 固定种子
+  python scripts/generate_special.py --all                           # 生成所有模板
+  python scripts/generate_special.py --batch 5 --template studio_nude # 批量生成5张
+        """
+    )
+    
+    parser.add_argument("--list", "-l", action="store_true", help="列出所有模板")
+    parser.add_argument("--template", "-t", type=str, help="指定模板名称")
+    parser.add_argument("--all", "-a", action="store_true", help="生成所有模板")
+    parser.add_argument("--batch", "-b", type=int, default=1, help="批量生成数量")
+    parser.add_argument("--seed", "-s", type=int, default=-1, help="随机种子")
+    parser.add_argument("--output", "-o", type=str, default="./output/special", help="输出目录")
+    
+    args = parser.parse_args()
+    
+    generator = SpecialGenerator(args.output)
+    
+    if args.list:
+        generator.list_templates()
+        return
+    
+    if args.template:
+        if args.template not in TEMPLATES:
+            print(f"❌ 未知模板: {args.template}")
+            print(f"💡 可用: {', '.join(TEMPLATES.keys())}")
+            return
+        
+        if args.batch > 1:
+            generator.generate_batch(args.template, args.batch, args.seed)
+        else:
+            generator.generate_one(args.template, args.seed)
+        return
+    
+    if args.all:
+        generator.generate_all(args.seed)
+        return
+    
+    # 默认显示帮助
+    parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
 
 
 ================================================================================
@@ -23834,6 +25173,436 @@ if __name__ == "__main__":
 
 
 ================================================================================
+文件: scripts\preprocess_image.py
+语言: Python
+行数: 251
+大小: 9.4 KB
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+图片预处理工具 - 在生成前缩放参考图
+用法:
+  python scripts/preprocess_image.py                    # 处理 input/girl.jpg
+  python scripts/preprocess_image.py --input image.jpg  # 处理指定图片
+  python scripts/preprocess_image.py --size 640         # 指定最大边长
+  python scripts/preprocess_image.py --mode 3           # 使用预设档位
+  python scripts/preprocess_image.py --all              # 批量处理 input/ 目录下所有图片
+"""
+
+import os
+import sys
+import argparse
+from pathlib import Path
+from PIL import Image
+
+# 添加项目根目录
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+# ==================== 配置 ====================
+DEFAULT_INPUT = "input/girl.jpg"
+OUTPUT_SUFFIX = "_resized"  # 输出文件名后缀（仅在 --no-overwrite 时使用）
+
+# ==================== 多档位预设 ====================
+SCALE_MODES = {
+    0: {"name": "极速测试", "size": 256},
+    1: {"name": "迷你", "size": 320},
+    2: {"name": "极速", "size": 384},
+    3: {"name": "标准 ⭐", "size": 512},
+    4: {"name": "中档", "size": 576},
+    5: {"name": "高清", "size": 640},
+    6: {"name": "细节", "size": 768},
+    7: {"name": "超清", "size": 896},
+    8: {"name": "准高清", "size": 1024},
+    9: {"name": "高清大图", "size": 1280},
+    10: {"name": "超高清", "size": 1536},
+}
+
+DEFAULT_MODE = 3  # 默认 512px
+
+
+# ==================== 核心函数 ====================
+
+def get_recommended_size():
+    """根据当前模型类型获取推荐尺寸"""
+    try:
+        from markflow.utils.model_config import get_model_config
+        cfg = get_model_config()
+        model_type = cfg.get('model_type', 'sd15')
+        if model_type == 'sdxl':
+            return 1024
+        return 768
+    except:
+        return 768
+
+
+def resize_image(input_path: Path, max_size: int = None, output_path: Path = None, 
+                 overwrite: bool = True, align: int = 64):  # 默认 overwrite=True
+    """缩放图片到指定最大边长"""
+    if max_size is None:
+        max_size = get_recommended_size()
+    
+    if not input_path.exists():
+        print(f"❌ 文件不存在: {input_path}")
+        return None
+    
+    img = Image.open(input_path)
+    w, h = img.size
+    
+    # 如果已经小于目标，跳过
+    if w <= max_size and h <= max_size:
+        print(f"✅ 图片尺寸 {w}x{h} 已小于 {max_size}，无需缩放")
+        return input_path
+    
+    # 等比例缩放
+    if w > h:
+        scale = max_size / w
+    else:
+        scale = max_size / h
+    
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    
+    # 对齐到 64 的倍数
+    new_w = ((new_w + align - 1) // align) * align
+    new_h = ((new_h + align - 1) // align) * align
+    
+    print(f"📐 缩放: {w}x{h} -> {new_w}x{new_h} (最大边长: {max_size})")
+    
+    resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+    
+    # 确定输出路径
+    if output_path is None:
+        if overwrite:
+            # 默认覆盖原图
+            output_path = input_path
+        else:
+            # 不覆盖时添加 _resized 后缀
+            stem = input_path.stem
+            suffix = input_path.suffix
+            if stem.endswith(OUTPUT_SUFFIX):
+                output_path = input_path.parent / f"{stem}{suffix}"
+            else:
+                output_path = input_path.parent / f"{stem}{OUTPUT_SUFFIX}{suffix}"
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    resized.save(output_path, quality=95)
+    print(f"✅ 已保存: {output_path}")
+    
+    return output_path
+
+
+def batch_process(input_dir: Path, max_size: int = None, overwrite: bool = True):  # 默认 overwrite=True
+    """批量处理目录下所有图片"""
+    if not input_dir.exists():
+        print(f"❌ 目录不存在: {input_dir}")
+        return
+    
+    # 排除已缩放的图片（避免重复处理）
+    extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
+    images = [f for f in input_dir.iterdir() if f.suffix.lower() in extensions]
+    
+    # 如果 overwrite=False，排除 _resized 文件
+    if not overwrite:
+        images = [f for f in images if OUTPUT_SUFFIX not in f.stem]
+    
+    if not images:
+        print(f"❌ 未找到图片: {input_dir}")
+        return
+    
+    print(f"\n📁 找到 {len(images)} 张图片")
+    print("=" * 50)
+    
+    processed = 0
+    for img_path in images:
+        print(f"\n🔄 处理: {img_path.name}")
+        result = resize_image(img_path, max_size, overwrite=overwrite)
+        if result:
+            processed += 1
+    
+    print(f"\n✅ 完成: 处理了 {processed}/{len(images)} 张图片")
+
+
+def main():
+    # ========== 如果没有参数，显示帮助 ==========
+    if len(sys.argv) == 1:
+        print(__doc__)
+        print("\n📊 预设档位列表")
+        print("=" * 50)
+        print(f"{'档位':<6} {'尺寸':<10} {'名称':<15}")
+        print("-" * 50)
+        for key, val in SCALE_MODES.items():
+            star = " ⭐" if key == DEFAULT_MODE else ""
+            print(f"  {key:<4} {val['size']:<6}px {val['name']:<15}{star}")
+        print("=" * 50)
+        print("\n💡 示例:")
+        print("  python scripts/preprocess_image.py --mode 3          # 使用 512px (默认覆盖原图)")
+        print("  python scripts/preprocess_image.py --mode 5          # 使用 640px")
+        print("  python scripts/preprocess_image.py --no-overwrite    # 不覆盖，输出 _resized 文件")
+        print("  python scripts/preprocess_image.py --size 600        # 自定义 600px")
+        print("  python scripts/preprocess_image.py --all             # 批量处理")
+        print("  python scripts/preprocess_image.py --list            # 列出所有档位")
+        return
+    
+    parser = argparse.ArgumentParser(
+        description="图片预处理 - 缩放参考图以加速生成",
+        epilog="""
+示例:
+  python scripts/preprocess_image.py                    # 处理 input/girl.jpg (默认 512px，覆盖原图)
+  python scripts/preprocess_image.py --mode 5          # 使用预设档位 5 (640px)
+  python scripts/preprocess_image.py --no-overwrite   # 不覆盖原图，输出 _resized 文件
+  python scripts/preprocess_image.py --size 640        # 指定最大边长 640px
+  python scripts/preprocess_image.py --list            # 列出所有档位
+  python scripts/preprocess_image.py --all             # 批量处理 input/
+        """
+    )
+    
+    parser.add_argument("--input", "-i", type=str, help="输入图片路径")
+    parser.add_argument("--output", "-o", type=str, help="输出路径")
+    parser.add_argument("--size", "-s", type=int, default=None, 
+                       help="最大边长 (默认: 自动适配，SD1.5: 768, SDXL: 1024)")
+    parser.add_argument("--mode", "-m", type=int, default=None,
+                       help=f"使用预设档位 (0-10, 默认: {DEFAULT_MODE}=512px)")
+    parser.add_argument("--list", action="store_true", help="列出所有档位")
+    parser.add_argument("--all", "-a", action="store_true", 
+                       help="批量处理 input/ 目录下所有图片")
+    parser.add_argument("--no-overwrite", action="store_true", 
+                       help="不覆盖原图，输出 _resized 文件 (默认覆盖)")
+    parser.add_argument("--align", type=int, default=64, 
+                       help="对齐到多少的倍数 (默认: 64)")
+    
+    args = parser.parse_args()
+    
+    # ========== 列出档位 ==========
+    if args.list:
+        print("\n📊 预设档位列表")
+        print("=" * 50)
+        print(f"{'档位':<6} {'尺寸':<10} {'名称':<15}")
+        print("-" * 50)
+        for key, val in SCALE_MODES.items():
+            star = " ⭐" if key == DEFAULT_MODE else ""
+            print(f"  {key:<4} {val['size']:<6}px {val['name']:<15}{star}")
+        print("=" * 50)
+        print(f"💡 使用: --mode <档位>  如 --mode 3")
+        return
+    
+    # ========== 确定尺寸 ==========
+    max_size = args.size
+    
+    # 如果指定了 mode，覆盖 size
+    if args.mode is not None:
+        if args.mode in SCALE_MODES:
+            max_size = SCALE_MODES[args.mode]["size"]
+            print(f"📌 使用档位 {args.mode}: {SCALE_MODES[args.mode]['name']} ({max_size}px)")
+        else:
+            print(f"❌ 无效档位: {args.mode}，有效范围 0-10")
+            print("💡 使用 --list 查看所有档位")
+            sys.exit(1)
+    
+    # 确定是否覆盖（默认 True，--no-overwrite 时 False）
+    overwrite = not args.no_overwrite
+    
+    # 如果指定了 --all，批量处理
+    if args.all:
+        input_dir = Path("input")
+        batch_process(input_dir, max_size, overwrite)
+        return
+    
+    # 确定输入路径
+    if args.input:
+        input_path = Path(args.input)
+    else:
+        input_path = Path(DEFAULT_INPUT)
+    
+    if not input_path.exists():
+        print(f"❌ 文件不存在: {input_path}")
+        print(f"💡 请指定正确的路径: --input <文件路径>")
+        print(f"   或确保 {DEFAULT_INPUT} 存在")
+        sys.exit(1)
+    
+    # 执行缩放
+    output_path = Path(args.output) if args.output else None
+    resize_image(input_path, max_size, output_path, overwrite, args.align)
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+文件: scripts\rename_images.py
+语言: Python
+行数: 161
+大小: 5.4 KB
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+批量重命名 input/ 目录下的图片
+用法:
+  python scripts/rename_images.py              # 预览重命名
+  python scripts/rename_images.py --execute    # 执行重命名
+  python scripts/rename_images.py --prefix girl --start 1
+  python scripts/rename_images.py --reset      # 重置编号，从头开始
+"""
+
+import os
+import sys
+import re
+import argparse
+from pathlib import Path
+
+# 支持的文件扩展名
+SUPPORTED_EXTS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="批量重命名 input/ 目录下的图片")
+    parser.add_argument("--dir", "-d", default="input", help="目标目录 (默认: input)")
+    parser.add_argument("--prefix", "-p", default="girl", help="文件名前缀 (默认: girl)")
+    parser.add_argument("--start", "-s", type=int, default=1, help="起始编号 (默认: 1)")
+    parser.add_argument("--digits", "-n", type=int, default=2, help="编号位数 (默认: 2)")
+    parser.add_argument("--execute", "-e", action="store_true", help="执行重命名 (不加此参数仅预览)")
+    parser.add_argument("--reset", "-r", action="store_true", help="重置编号从1开始，忽略已有编号")
+    
+    args = parser.parse_args()
+    
+    target_dir = Path(args.dir)
+    if not target_dir.exists():
+        print(f"❌ 目录不存在: {target_dir}")
+        return
+    
+    # 收集所有图片
+    images = []
+    for ext in SUPPORTED_EXTS:
+        images.extend(target_dir.glob(f"*{ext}"))
+    
+    if not images:
+        print(f"❌ 在 {target_dir} 中未找到图片")
+        return
+    
+    # 按修改时间排序（保证顺序一致）
+    images.sort(key=lambda x: x.stat().st_mtime)
+    
+    print(f"\n📁 找到 {len(images)} 张图片")
+    print("=" * 60)
+    
+    # 过滤出已经是目标格式的文件
+    existing_girls = []
+    others = []
+    pattern = re.compile(rf'^{args.prefix}_(\d+)\.', re.IGNORECASE)
+    
+    for img in images:
+        if pattern.match(img.name):
+            existing_girls.append(img)
+        else:
+            others.append(img)
+    
+    # 确定起始编号
+    start_num = args.start
+    
+    if not args.reset and existing_girls:
+        # 找出最大的编号
+        max_num = 0
+        for img in existing_girls:
+            match = pattern.match(img.name)
+            if match:
+                num = int(match.group(1))
+                if num > max_num:
+                    max_num = num
+        if max_num >= start_num:
+            start_num = max_num + 1
+            print(f"📌 检测到已有编号，从 {start_num} 开始")
+    
+    # 构建重命名计划
+    rename_plan = []
+    skipped = 0
+    current_num = start_num
+    
+    # 先处理非标准命名的文件（others）
+    # 再处理已存在的 girl_xx 文件（重新编号）
+    process_files = others + existing_girls
+    
+    # 如果 reset，全部重新编号
+    if args.reset:
+        process_files = images
+        current_num = args.start
+        print(f"📌 重置模式: 全部从 {current_num} 开始编号")
+    
+    for img_path in process_files:
+        # 检查是否是目标格式且不需要重命名
+        match = pattern.match(img_path.name)
+        if match and not args.reset:
+            num = int(match.group(1))
+            # 如果编号与当前编号一致，保留
+            if num == current_num:
+                print(f"  ⏭️  {img_path.name} -> 已是目标名称，跳过")
+                skipped += 1
+                current_num += 1
+                continue
+        
+        ext = img_path.suffix.lower()
+        new_name = f"{args.prefix}_{current_num:0{args.digits}d}{ext}"
+        new_path = img_path.parent / new_name
+        
+        # 检查目标文件是否已存在
+        if new_path.exists() and new_path != img_path:
+            print(f"  ⚠️  {img_path.name} -> {new_name} 已存在，跳过")
+            skipped += 1
+            current_num += 1
+            continue
+        
+        rename_plan.append((img_path, new_path))
+        current_num += 1
+    
+    if not rename_plan:
+        print("\n✅ 所有图片已符合命名规范，无需重命名")
+        if skipped > 0:
+            print(f"   (跳过了 {skipped} 个文件)")
+        return
+    
+    print("\n📋 重命名计划:")
+    print("-" * 60)
+    for old, new in rename_plan[:30]:
+        print(f"  {old.name} -> {new.name}")
+    if len(rename_plan) > 30:
+        print(f"  ... 还有 {len(rename_plan) - 30} 个文件")
+    
+    print("-" * 60)
+    print(f"共 {len(rename_plan)} 个文件需要重命名")
+    if skipped > 0:
+        print(f"(跳过 {skipped} 个文件)")
+    
+    if not args.execute:
+        print("\n💡 以上为预览，加上 --execute 参数执行重命名")
+        print("   python scripts/rename_images.py --execute")
+        return
+    
+    # 执行重命名
+    print("\n🔄 执行重命名...")
+    success = 0
+    for old, new in rename_plan:
+        try:
+            old.rename(new)
+            print(f"  ✅ {old.name} -> {new.name}")
+            success += 1
+        except Exception as e:
+            print(f"  ❌ {old.name} 失败: {e}")
+    
+    print("\n" + "=" * 60)
+    print(f"✅ 完成: 成功重命名 {success}/{len(rename_plan)} 个文件")
+    print(f"📂 目录: {target_dir.absolute()}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
 文件: scripts\review_skill.py
 语言: Python
 行数: 232
@@ -24117,6 +25886,234 @@ if __name__ == "__main__":
     print("执行结果:")
     print("="*50)
     print(result)
+
+
+================================================================================
+文件: scripts\test_mediapipe.py
+语言: Python
+行数: 219
+大小: 7.1 KB
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+测试新版 MediaPipe API 是否正常工作
+"""
+
+import sys
+from pathlib import Path
+
+# 添加项目根目录
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+
+def test_mediapipe_import():
+    """测试 MediaPipe 导入"""
+    print("=" * 60)
+    print("测试 1: 导入 mediapipe")
+    print("=" * 60)
+    
+    try:
+        import mediapipe as mp
+        print(f"  ✅ mediapipe 版本: {mp.__version__}")
+        print(f"  ✅ 可用模块: {[x for x in dir(mp) if not x.startswith('_')][:10]}...")
+    except ImportError as e:
+        print(f"  ❌ mediapipe 未安装: {e}")
+        return False
+    return True
+
+
+def test_new_api():
+    """测试新版 API"""
+    print("\n" + "=" * 60)
+    print("测试 2: 新版 mediapipe.tasks API")
+    print("=" * 60)
+    
+    try:
+        from mediapipe.tasks import python
+        from mediapipe.tasks.python import vision
+        print("  ✅ mediapipe.tasks.python 导入成功")
+    except ImportError as e:
+        print(f"  ❌ 新版 API 导入失败: {e}")
+        print("  💡 可能需要安装: pip install mediapipe")
+        return False
+    return True
+
+
+def test_pose_landmarker():
+    """测试姿态检测器"""
+    print("\n" + "=" * 60)
+    print("测试 3: 创建 PoseLandmarker")
+    print("=" * 60)
+    
+    try:
+        from mediapipe.tasks import python
+        from mediapipe.tasks.python import vision
+        
+        # 模型路径
+        model_path = project_root / "skills/expand_to_full_body/pose_landmarker_heavy.task"
+        
+        if not model_path.exists():
+            print(f"  ❌ 模型文件不存在: {model_path}")
+            print("  💡 下载命令:")
+            print(f"     python -c \"import urllib.request; urllib.request.urlretrieve('https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task', '{model_path}')\"")
+            return False
+        
+        print(f"  ✅ 模型文件存在: {model_path}")
+        
+        # 创建检测器
+        pose_options = vision.PoseLandmarkerOptions(
+            base_options=python.BaseOptions(model_asset_path=str(model_path)),
+            running_mode=vision.RunningMode.IMAGE,
+            num_poses=1,
+        )
+        
+        detector = vision.PoseLandmarker.create_from_options(pose_options)
+        print("  ✅ PoseLandmarker 创建成功")
+        return True
+        
+    except Exception as e:
+        print(f"  ❌ 创建失败: {e}")
+        return False
+
+
+def test_detect_image():
+    """测试实际检测图片"""
+    print("\n" + "=" * 60)
+    print("测试 4: 检测图片")
+    print("=" * 60)
+    
+    try:
+        import mediapipe as mp
+        import numpy as np
+        from PIL import Image
+        from mediapipe.tasks import python
+        from mediapipe.tasks.python import vision
+        
+        # 找一张测试图片
+        test_image = project_root / "input/girl_01.jpg"
+        if not test_image.exists():
+            # 尝试其他路径
+            test_image = project_root / "input/girl.jpg"
+        if not test_image.exists():
+            print(f"  ⚠️ 找不到测试图片，跳过检测测试")
+            return True
+        
+        print(f"  📸 测试图片: {test_image}")
+        
+        # 创建检测器
+        model_path = project_root / "skills/expand_to_full_body/pose_landmarker_heavy.task"
+        pose_options = vision.PoseLandmarkerOptions(
+            base_options=python.BaseOptions(model_asset_path=str(model_path)),
+            running_mode=vision.RunningMode.IMAGE,
+            num_poses=1,
+        )
+        detector = vision.PoseLandmarker.create_from_options(pose_options)
+        
+        # 读取图片
+        image = Image.open(test_image).convert("RGB")
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.array(image))
+        
+        # 检测
+        result = detector.detect(mp_image)
+        
+        if result and result.pose_landmarks:
+            landmarks = result.pose_landmarks[0]
+            print(f"  ✅ 检测成功! 找到 {len(landmarks)} 个关键点")
+            # 打印前几个关键点
+            for i in range(min(5, len(landmarks))):
+                print(f"     关键点 {i}: ({landmarks[i].x:.3f}, {landmarks[i].y:.3f}, {landmarks[i].z:.3f})")
+            return True
+        else:
+            print("  ⚠️ 未检测到人物姿态")
+            return True
+            
+    except Exception as e:
+        print(f"  ❌ 检测失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def test_expand_to_full_body():
+    """测试 expand_to_full_body 技能"""
+    print("\n" + "=" * 60)
+    print("测试 5: expand_to_full_body 技能")
+    print("=" * 60)
+    
+    try:
+        from skills.expand_to_full_body.skill import ExpandToFullBody
+        
+        skill = ExpandToFullBody(config={'device': 'cpu'})
+        print("  ✅ ExpandToFullBody 初始化成功")
+        
+        # 找测试图片
+        test_image = project_root / "input/girl_01.jpg"
+        if not test_image.exists():
+            test_image = project_root / "input/girl.jpg"
+        if not test_image.exists():
+            print("  ⚠️ 找不到测试图片，跳过执行测试")
+            return True
+        
+        # 执行
+        result = skill.execute(
+            image_path=str(test_image),
+            output_path=str(project_root / "output/test_mediapipe.png"),
+            prompt="a beautiful woman standing",
+        )
+        
+        if result.get('status') == 'success':
+            print(f"  ✅ 执行成功!")
+            print(f"     输出: {result.get('output_path')}")
+            return True
+        else:
+            print(f"  ❌ 执行失败: {result.get('error')}")
+            return False
+            
+    except Exception as e:
+        print(f"  ❌ 测试失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def main():
+    print("\n" + "=" * 60)
+    print("🧪 MediaPipe 新版 API 测试")
+    print("=" * 60)
+    
+    results = []
+    
+    # 运行所有测试
+    results.append(("导入 mediapipe", test_mediapipe_import()))
+    results.append(("新版 API", test_new_api()))
+    results.append(("姿态检测器", test_pose_landmarker()))
+    results.append(("图片检测", test_detect_image()))
+    results.append(("技能测试", test_expand_to_full_body()))
+    
+    # 汇总
+    print("\n" + "=" * 60)
+    print("📊 测试结果汇总")
+    print("=" * 60)
+    
+    for name, passed in results:
+        status = "✅" if passed else "❌"
+        print(f"  {status} {name}")
+    
+    all_passed = all(passed for _, passed in results)
+    print("\n" + "=" * 60)
+    if all_passed:
+        print("🎉 所有测试通过! MediaPipe 新版 API 正常工作")
+    else:
+        print("⚠️ 部分测试失败，请检查上面的错误信息")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()
 
 
 ================================================================================

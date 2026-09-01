@@ -84,7 +84,7 @@ class BedroomLingerie:
 
     def _setup_config(self):
         defaults = {
-            'default_steps': 30,
+            'default_steps': 20,
             'default_strength': 0.7,
             'default_outfit': 'white_lace',
             'default_pose': 'lying',
