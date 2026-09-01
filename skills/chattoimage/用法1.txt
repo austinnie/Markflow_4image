@@ -1,0 +1,213 @@
+ChatToImage 完整使用手册
+一、两种调用方式
+1.1 通过 Markflow CLI（推荐）
+bash
+python -m markflow.cli.commands execute ChatToImage message="你的自然语言描述"
+1.2 直接运行技能文件
+bash
+python skills/chattoimage/skill.py --message "你的自然语言描述"
+二、基础用法
+2.1 文生图
+bash
+# 生成一张图片
+python -m markflow.cli.commands execute ChatToImage message="生成一个美丽的女孩，在花园里"
+
+# 指定模型
+python -m markflow.cli.commands execute ChatToImage message="生成一个赛博朋克风格的城市" model="qwen2.5:14b"
+2.2 图生图（需要输入图片）
+bash
+# 换衣服
+python -m markflow.cli.commands execute ChatToImage \
+    message="把她的衣服换成红色裙子" \
+    image_path="input/girl.jpg"
+
+# 换背景
+python -m markflow.cli.commands execute ChatToImage \
+    message="把背景换成海滩" \
+    image_path="input/girl.jpg"
+
+# 加猫耳
+python -m markflow.cli.commands execute ChatToImage \
+    message="加猫耳" \
+    image_path="input/girl.jpg"
+
+# 风格转换
+python -m markflow.cli.commands execute ChatToImage \
+    message="转成油画风格" \
+    image_path="input/girl.jpg"
+2.3 多轮对话（带上下文）
+bash
+# 第一轮
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个女孩" \
+    conversation_id="my_session"
+
+# 第二轮 - 自动继承上下文
+python -m markflow.cli.commands execute ChatToImage \
+    message="把她的头发换成粉色" \
+    conversation_id="my_session"
+
+# 第三轮
+python -m markflow.cli.commands execute ChatToImage \
+    message="换成海滩背景" \
+    conversation_id="my_session"
+三、交互式对话模式
+3.1 启动交互式对话
+bash
+python skills/chattoimage/skill.py --interactive
+3.2 交互式对话示例
+text
+💬 ChatToImage 交互式对话模式
+============================================================
+输入 'exit' 或 'quit' 退出
+输入 'clear' 清除当前会话
+输入 'list' 查看所有意图
+------------------------------------------------------------
+
+📝 你: 生成一个女孩
+📌 文生图模式: 使用完整提示词
+✅ 生成成功!
+📁 图片: output/20260901_220000_txt2img_text_to_image_text_123456.png
+
+📝 你: 把她的头发换成粉色
+📌 图生图模式: 使用场景提示词（保留原图人物）
+✅ 生成成功!
+📁 图片: output/20260901_220030_img2img_change_hair_text_123457.png
+
+📝 你: 换成海滩背景
+📌 图生图模式: 使用场景提示词（保留原图人物）
+✅ 生成成功!
+📁 图片: output/20260901_220100_img2img_change_background_text_123458.png
+
+📝 你: exit
+👋 再见！
+四、支持的所有意图（自然语言 → 技能映射）
+自然语言关键词	意图类型	调用的技能	需要图片
+生成、画、创建	text_to_image	sd_image_generator	❌
+换衣服、换装、穿裙子	change_clothes	change_clothes	✅
+换风格、换服装风格	change_clothing_style	change_clothing_style	✅
+换背景、换个场景	change_background	change_background	✅
+换表情、笑、开心、难过	change_expression	change_expression	✅
+换发型、染发、头发颜色	change_hair	change_hair	✅
+换眼睛颜色、瞳色	change_eye_color	change_eye_color	✅
+换脸、面部重绘	change_face	change_face	✅
+换肤色、皮肤颜色	change_skin_tone	change_skin_tone	✅
+换体型、变瘦、变胖	change_body_type	change_body_type	✅
+变年轻、变老	change_age	change_age	✅
+变性、男变女、女变男	change_gender	change_gender	✅
+换国籍、换人种	change_nationality	change_nationality	✅
+换妆容、化妆	change_makeup	change_makeup	✅
+换光照、换光线	change_lighting	change_lighting	✅
+换视角、换角度	change_perspective	change_perspective	✅
+换家具风格	change_furniture	change_furniture	✅
+加眼镜、戴眼镜	add_glasses	add_glasses	✅
+加猫耳、兔耳、兽耳	add_animal_ears	add_animal_ears	✅
+加纹身	add_tattoo	add_tattoo	✅
+加花、加树、加背景	add_background_objects	add_background_objects	✅
+风格转换、油画、水彩	style_transfer	style_transfer	✅
+动漫转写实、二次元转真人	anime_to_real	anime_to_real	✅
+写实转动漫	real_to_anime	real_to_anime	✅
+素描转写实	sketch_to_real	sketch_to_real	✅
+线稿上色	colorize_sketch	colorize_sketch	✅
+换天气、晴天、雨天	weather_transfer	weather_transfer	✅
+换季节、春天、夏天	season_transfer	season_transfer	✅
+白天转黑夜、昼夜转换	day_night_transfer	day_night_transfer	✅
+去衣、脱衣服	remove_clothes	remove_clothes	✅
+移除物体、去掉	remove_object	remove_object	✅
+替换物体、换成	replace_object	replace_object	✅
+幻想角色、精灵、矮人	fantasy_character	fantasy_character	✅
+机甲、机器人	mecha_generator	mecha_generator	✅
+人转机器人、变机器人	human_to_robot	human_to_robot	✅
+全身、扩展为全身	expand_to_full_body	expand_to_full_body	✅
+老照片、修复照片	old_photo_restore	old_photo_restore	✅
+五、完整使用示例
+5.1 单人像编辑工作流
+bash
+# 1. 先生成一张图
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个美丽亚洲女孩，长发，白色连衣裙" \
+    conversation_id="girl_edit"
+
+# 2. 换衣服
+python -m markflow.cli.commands execute ChatToImage \
+    message="换成红色旗袍" \
+    conversation_id="girl_edit"
+
+# 3. 换背景
+python -m markflow.cli.commands execute ChatToImage \
+    message="把背景换成樱花树下" \
+    conversation_id="girl_edit"
+
+# 4. 加猫耳
+python -m markflow.cli.commands execute ChatToImage \
+    message="加猫耳" \
+    conversation_id="girl_edit"
+
+# 5. 换表情
+python -m markflow.cli.commands execute ChatToImage \
+    message="让她笑起来" \
+    conversation_id="girl_edit"
+5.2 目录批量处理（通过 Shell 循环）
+bash
+# 对 input/ 目录所有图片执行相同操作
+for img in input/*.jpg; do
+    python -m markflow.cli.commands execute ChatToImage \
+        message="把背景换成海滩" \
+        image_path="$img" \
+        conversation_id="batch_$(basename $img .jpg)"
+done
+5.3 自定义 LLM 参数
+bash
+# 使用不同的 LLM 模型
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个赛博朋克风格的城市" \
+    model="qwen2.5:14b"
+
+# 使用 OpenAI 兼容 API
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个女孩" \
+    api_type="openai_compatible" \
+    api_base="http://localhost:8000/v1" \
+    api_key="your_key"
+六、ChatToImage 完整参数
+参数	说明	默认值
+message	必填 用户自然语言描述	-
+image_path	输入图片路径（图生图需要）	-
+model	LLM 模型名称	qwen2.5:7b
+api_type	API 类型 (ollama/openai/openai_compatible)	ollama
+api_base	API 地址	http://localhost:11434
+api_key	API Key（OpenAI 需要）	""
+conversation_id	会话 ID（多轮对话）	default
+stream	是否流式输出	false
+七、直接运行 skill.py 的参数
+bash
+python skills/chattoimage/skill.py --help
+参数	简写	说明	默认值
+--message	-m	用户自然语言描述	-
+--image_path	-i	输入图片路径	-
+--model	-	LLM 模型名称	qwen2.5:7b
+--api_type	-	API 类型	ollama
+--api_base	-	API 地址	http://localhost:11434
+--api_key	-	API Key	""
+--conversation_id	-c	会话 ID	default
+--interactive	-I	交互式对话模式	-
+--list-intents	-l	列出所有支持的意图	-
+--verbose	-v	显示详细日志	-
+--output	-o	输出结果到文件	-
+八、快速参考
+bash
+# 最常用 - 文生图
+python -m markflow.cli.commands execute ChatToImage message="生成一个女孩"
+
+# 最常用 - 图生图
+python -m markflow.cli.commands execute ChatToImage message="换衣服" image_path="input/girl.jpg"
+
+# 多轮对话
+python -m markflow.cli.commands execute ChatToImage message="生成女孩" conversation_id="s1"
+python -m markflow.cli.commands execute ChatToImage message="换粉色头发" conversation_id="s1"
+
+# 交互式
+python skills/chattoimage/skill.py --interactive
+
+# 查看所有支持的功能
+python skills/chattoimage/skill.py --list-intents

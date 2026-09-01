@@ -1,0 +1,408 @@
+ChatToImage 对话式图像生成 - 完整使用手册
+通过自然语言对话生成和编辑图片，AI 自动识别意图并调用对应的图像处理技能
+
+📖 目录
+快速开始
+
+两种调用方式
+
+交互式对话模式
+
+支持的意图列表
+
+完整使用示例
+
+多轮对话与上下文
+
+参数参考
+
+高级配置
+
+常见问题
+
+快速开始
+文生图 - 从零生成
+bash
+python -m markflow.cli.commands execute ChatToImage message="生成一个美丽的女孩，在花园里"
+图生图 - 编辑已有图片
+bash
+python -m markflow.cli.commands execute ChatToImage \
+    message="把她的衣服换成红色裙子" \
+    image_path="input/girl.jpg"
+多轮对话
+bash
+# 第一轮
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个女孩" \
+    conversation_id="my_session"
+
+# 第二轮 - 自动继承上下文
+python -m markflow.cli.commands execute ChatToImage \
+    message="把她的头发换成粉色" \
+    conversation_id="my_session"
+交互式模式
+bash
+python skills/chattoimage/skill.py --interactive
+两种调用方式
+方式一：通过 Markflow CLI（推荐）
+bash
+python -m markflow.cli.commands execute ChatToImage message="你的自然语言描述"
+优点：与项目其他技能调用方式统一，适合脚本和自动化
+
+方式二：直接运行技能文件
+bash
+python skills/chattoimage/skill.py --message "你的自然语言描述"
+优点：支持更多命令行参数，方便调试
+
+交互式对话模式
+启动
+bash
+python skills/chattoimage/skill.py --interactive
+交互示例
+text
+💬 ChatToImage 交互式对话模式
+============================================================
+输入 'exit' 或 'quit' 退出
+输入 'clear' 清除当前会话
+输入 'list' 查看所有意图
+------------------------------------------------------------
+
+📝 你: 生成一个女孩
+📌 文生图模式: 使用完整提示词
+✅ 生成成功!
+📁 图片: output/20260901_220000_txt2img_text_to_image_text_123456.png
+
+📝 你: 把她的头发换成粉色
+📌 图生图模式: 使用场景提示词（保留原图人物）
+✅ 生成成功!
+📁 图片: output/20260901_220030_img2img_change_hair_text_123457.png
+
+📝 你: 换成海滩背景
+📌 图生图模式: 使用场景提示词（保留原图人物）
+✅ 生成成功!
+📁 图片: output/20260901_220100_img2img_change_background_text_123458.png
+
+📝 你: exit
+👋 再见！
+交互命令
+命令	说明
+exit / quit / q	退出交互模式
+clear	清除当前会话历史
+list	查看所有支持的意图
+支持的意图列表
+📌 文生图
+自然语言关键词	意图类型	调用的技能	需要图片
+生成、画、创建、create	text_to_image	sd_image_generator	❌
+👤 人物编辑
+自然语言关键词	意图类型	调用的技能	需要图片
+换衣服、换装、穿裙子、穿裤子	change_clothes	change_clothes	✅
+换风格、换服装风格	change_clothing_style	change_clothing_style	✅
+换表情、笑、开心、难过、惊讶、生气	change_expression	change_expression	✅
+换发型、染发、头发颜色	change_hair	change_hair	✅
+换眼睛颜色、瞳色	change_eye_color	change_eye_color	✅
+换脸、面部重绘	change_face	change_face	✅
+换肤色、皮肤颜色、变白、变黑	change_skin_tone	change_skin_tone	✅
+换体型、变瘦、变胖、变壮	change_body_type	change_body_type	✅
+变年轻、变老	change_age	change_age	✅
+变性、男变女、女变男	change_gender	change_gender	✅
+换国籍、换人种、变白人、变亚洲人	change_nationality	change_nationality	✅
+换妆容、化妆	change_makeup	change_makeup	✅
+🎨 场景/背景编辑
+自然语言关键词	意图类型	调用的技能	需要图片
+换背景、换个场景	change_background	change_background	✅
+换光照、换光线	change_lighting	change_lighting	✅
+换视角、换角度	change_perspective	change_perspective	✅
+换家具风格	change_furniture	change_furniture	✅
+✨ 添加元素
+自然语言关键词	意图类型	调用的技能	需要图片
+加眼镜、戴眼镜	add_glasses	add_glasses	✅
+加猫耳、兔耳、兽耳	add_animal_ears	add_animal_ears	✅
+加纹身	add_tattoo	add_tattoo	✅
+加花、加树、加云、加背景	add_background_objects	add_background_objects	✅
+🖼️ 风格转换
+自然语言关键词	意图类型	调用的技能	需要图片
+风格转换、转成、油画、水彩、漫画	style_transfer	style_transfer	✅
+动漫转写实、二次元转真人	anime_to_real	anime_to_real	✅
+写实转动漫、真人转动漫	real_to_anime	real_to_anime	✅
+素描转写实	sketch_to_real	sketch_to_real	✅
+线稿上色	colorize_sketch	colorize_sketch	✅
+🌤️ 天气/季节/昼夜
+自然语言关键词	意图类型	调用的技能	需要图片
+换天气、晴天、雨天、雪天	weather_transfer	weather_transfer	✅
+换季节、春天、夏天、秋天、冬天	season_transfer	season_transfer	✅
+昼夜转换、白天转黑夜	day_night_transfer	day_night_transfer	✅
+🗑️ 移除/替换
+自然语言关键词	意图类型	调用的技能	需要图片
+去衣、脱衣服、nude	remove_clothes	remove_clothes	✅
+移除物体、去掉	remove_object	remove_object	✅
+替换物体、换成	replace_object	replace_object	✅
+🤖 生成类
+自然语言关键词	意图类型	调用的技能	需要图片
+幻想角色、精灵、矮人、兽人	fantasy_character	fantasy_character	✅
+机甲、机器人	mecha_generator	mecha_generator	✅
+人转机器人、变机器人	human_to_robot	human_to_robot	✅
+全身、扩展为全身	expand_to_full_body	expand_to_full_body	✅
+老照片、修复照片	old_photo_restore	old_photo_restore	✅
+💬 对话
+自然语言关键词	意图类型	调用的技能	需要图片
+普通聊天、打招呼	chat	-	❌
+完整使用示例
+示例 1：单人像编辑工作流
+bash
+# 1. 先生成一张图
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个美丽亚洲女孩，长发，白色连衣裙" \
+    conversation_id="girl_edit"
+
+# 2. 换衣服
+python -m markflow.cli.commands execute ChatToImage \
+    message="换成红色旗袍" \
+    conversation_id="girl_edit"
+
+# 3. 换背景
+python -m markflow.cli.commands execute ChatToImage \
+    message="把背景换成樱花树下" \
+    conversation_id="girl_edit"
+
+# 4. 加猫耳
+python -m markflow.cli.commands execute ChatToImage \
+    message="加猫耳" \
+    conversation_id="girl_edit"
+
+# 5. 换表情
+python -m markflow.cli.commands execute ChatToImage \
+    message="让她笑起来" \
+    conversation_id="girl_edit"
+示例 2：风格转换
+bash
+# 转成油画风格
+python -m markflow.cli.commands execute ChatToImage \
+    message="转成油画风格" \
+    image_path="input/girl.jpg"
+
+# 转成水彩风格
+python -m markflow.cli.commands execute ChatToImage \
+    message="转成水彩风格" \
+    image_path="input/girl.jpg"
+
+# 转成赛博朋克风格
+python -m markflow.cli.commands execute ChatToImage \
+    message="转成赛博朋克风格，霓虹灯效果" \
+    image_path="input/girl.jpg"
+示例 3：背景替换
+bash
+# 换成海滩
+python -m markflow.cli.commands execute ChatToImage \
+    message="把背景换成海滩，阳光明媚" \
+    image_path="input/girl.jpg"
+
+# 换成森林
+python -m markflow.cli.commands execute ChatToImage \
+    message="把背景换成森林，有阳光透过树叶" \
+    image_path="input/girl.jpg"
+
+# 换成城市夜景
+python -m markflow.cli.commands execute ChatToImage \
+    message="把背景换成城市夜景，霓虹灯" \
+    image_path="input/girl.jpg"
+示例 4：添加配饰
+bash
+# 加眼镜
+python -m markflow.cli.commands execute ChatToImage \
+    message="加一副圆框眼镜" \
+    image_path="input/girl.jpg"
+
+# 加猫耳
+python -m markflow.cli.commands execute ChatToImage \
+    message="加猫耳" \
+    image_path="input/girl.jpg"
+
+# 加纹身
+python -m markflow.cli.commands execute ChatToImage \
+    message="在手臂上加一个龙纹身" \
+    image_path="input/girl.jpg"
+示例 5：使用自定义 LLM
+bash
+# 使用更大的模型（更准确但更慢）
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个赛博朋克风格的城市" \
+    model="qwen2.5:14b"
+
+# 使用 OpenAI 兼容 API
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个女孩" \
+    api_type="openai_compatible" \
+    api_base="http://localhost:8000/v1" \
+    api_key="your_key"
+示例 6：目录批量处理
+bash
+# 对 input/ 目录所有图片执行相同操作
+for img in input/*.jpg; do
+    python -m markflow.cli.commands execute ChatToImage \
+        message="把背景换成海滩" \
+        image_path="$img" \
+        conversation_id="batch_$(basename $img .jpg)"
+done
+多轮对话与上下文
+工作原理
+ChatToImage 支持多轮对话，会自动记忆：
+
+上次操作（换衣、换背景等）
+
+上次主题（人物描述）
+
+偏好设置（风格、场景）
+
+最近生成的图片
+
+示例
+bash
+# 第一轮：生成图片
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个美丽女孩" \
+    conversation_id="session1"
+
+# 输出：生成了一张女孩图片
+
+# 第二轮：换衣服（自动使用上一张图）
+python -m markflow.cli.commands execute ChatToImage \
+    message="换成红色裙子" \
+    conversation_id="session1"
+
+# 第三轮：换背景
+python -m markflow.cli.commands execute ChatToImage \
+    message="换成海滩背景" \
+    conversation_id="session1"
+
+# 第四轮：加配饰
+python -m markflow.cli.commands execute ChatToImage \
+    message="加猫耳" \
+    conversation_id="session1"
+清除会话
+bash
+# 清除指定会话
+python skills/chattoimage/skill.py --clear conversation_id="session1"
+
+# 清除所有会话
+python skills/chattoimage/skill.py --clear-all
+参数参考
+CLI 参数（通过 markflow）
+bash
+python -m markflow.cli.commands execute ChatToImage [参数]
+参数	说明	默认值	必填
+message	用户自然语言描述	-	✅
+image_path	输入图片路径（图生图需要）	-	❌
+model	LLM 模型名称	qwen2.5:7b	❌
+api_type	API 类型 (ollama/openai/openai_compatible)	ollama	❌
+api_base	API 地址	http://localhost:11434	❌
+api_key	API Key（OpenAI 需要）	""	❌
+conversation_id	会话 ID（多轮对话）	default	❌
+stream	是否流式输出	false	❌
+直接运行参数
+bash
+python skills/chattoimage/skill.py [参数]
+参数	简写	说明	默认值
+--message	-m	用户自然语言描述	-
+--image_path	-i	输入图片路径	-
+--model	-	LLM 模型名称	qwen2.5:7b
+--api_type	-	API 类型	ollama
+--api_base	-	API 地址	http://localhost:11434
+--api_key	-	API Key	""
+--conversation_id	-c	会话 ID	default
+--interactive	-I	交互式对话模式	-
+--list-intents	-l	列出所有支持的意图	-
+--verbose	-v	显示详细日志	-
+--output	-o	输出结果到文件	-
+--clear	-	清除指定会话	-
+--clear-all	-	清除所有会话	-
+高级配置
+配置文件
+ChatToImage 默认读取项目根目录的 config.yaml：
+
+yaml
+# config.yaml
+llm:
+  model: qwen2.5:7b
+  api_type: ollama
+  api_base: http://localhost:11434
+  temperature: 0.3
+  max_tokens: 2048
+
+conversation:
+  max_history: 10
+  enable_context: true
+  auto_save_context: true
+
+defaults:
+  steps: 30
+  cfg_scale: 7.5
+  width: 512
+  height: 768
+  strength: 0.55
+  seed: -1
+查看所有可用意图
+bash
+python skills/chattoimage/skill.py --list-intents
+查看调用日志
+bash
+python -m markflow.cli.commands execute ChatToImage \
+    message="生成一个女孩" \
+    --verbose
+常见问题
+Q1: 图生图需要指定图片吗？
+A: 是的，图生图操作需要传入 image_path。如果是多轮对话，上一轮生成的图片会自动作为下一轮的输入。
+
+Q2: 如何查看当前会话的上下文？
+A: 使用 --verbose 参数可以看到上下文摘要。
+
+Q3: 支持哪些图片格式？
+A: 支持 jpg、jpeg、png、webp、bmp、gif 等常见格式。
+
+Q4: 如何切换 LLM 模型？
+A: 使用 --model 参数或在 config.yaml 中配置。
+
+Q5: 生成速度慢怎么办？
+A:
+
+使用更小的 LLM 模型（如 qwen2.5:1.5b）
+
+降低 steps 参数
+
+启用 GPU（device="cuda"）
+
+Q6: 如何保存结果到文件？
+A: 使用 --output 参数：
+
+bash
+python skills/chattoimage/skill.py \
+    --message "生成一个女孩" \
+    --output result.json
+Q7: 交互式模式下如何查看历史？
+A: 交互式模式下输入 list 查看所有支持的功能，输入 clear 清除会话。
+
+快速参考卡片
+bash
+# 1. 文生图
+python -m markflow.cli.commands execute ChatToImage message="生成一个女孩"
+
+# 2. 图生图（换衣服）
+python -m markflow.cli.commands execute ChatToImage message="换衣服" image_path="input/girl.jpg"
+
+# 3. 图生图（换背景）
+python -m markflow.cli.commands execute ChatToImage message="换成海滩背景" image_path="input/girl.jpg"
+
+# 4. 图生图（加猫耳）
+python -m markflow.cli.commands execute ChatToImage message="加猫耳" image_path="input/girl.jpg"
+
+# 5. 图生图（风格转换）
+python -m markflow.cli.commands execute ChatToImage message="转成油画风格" image_path="input/girl.jpg"
+
+# 6. 多轮对话
+python -m markflow.cli.commands execute ChatToImage message="生成女孩" conversation_id="s1"
+python -m markflow.cli.commands execute ChatToImage message="换粉色头发" conversation_id="s1"
+
+# 7. 交互式模式
+python skills/chattoimage/skill.py --interactive
+
+# 8. 查看所有功能
+python skills/chattoimage/skill.py --list-intents
