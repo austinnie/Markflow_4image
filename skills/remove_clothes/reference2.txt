@@ -1,0 +1,287 @@
+Special图片生成命令速查手册
+一、直接使用 sd_image_generator（最灵活）
+1.1 文生图（从零生成）
+bash
+python -m markflow.cli.commands execute sd_image_generator \
+    prompt="1girl, full body, beautiful face, nude, lying on bed, soft lighting, masterpiece" \
+    negative_prompt="ugly, deformed, bad anatomy" \
+    steps=30 \
+    cfg_scale=7.0 \
+    width=768 \
+    height=1024 \
+    seed=42 \
+    model_name="aiiiiii01_v10"
+	
+1.2 图生图（基于输入图片）
+bash
+# 单张图片
+python -m markflow.cli.commands execute sd_image_generator \
+    image_path="input/girl.jpg" \
+    prompt="lying on a large bed, soft mattress, bedroom background, soft lighting, warm atmosphere, masterpiece" \
+    negative_prompt="ugly, deformed, bad anatomy" \
+    strength=0.6 \
+    steps=30 \
+    width=768 \
+    height=1024
+
+# 批量处理（Shell 循环）
+for img in input/*.jpg; do
+    python -m markflow.cli.commands execute sd_image_generator \
+        image_path="$img" \
+        prompt="lying on a large bed, soft mattress, bedroom background, soft lighting, warm atmosphere, masterpiece" \
+        strength=0.6 \
+        steps=30
+done
+二、使用 generate_special.py（模板化生成）
+2.1 查看所有模板
+bash
+python scripts/generate_special.py --list
+2.2 文生图模式（txt2img）
+bash
+# 使用模板的完整提示词（包含人物描述）
+python scripts/generate_special.py --template bedroom_nude --mode txt2img
+
+# 指定种子
+python scripts/generate_special.py --template bedroom_nude --mode txt2img --seed 42
+2.3 图生图模式（img2img）- 单张图片
+bash
+# 基础用法（自动检测为 img2img）
+python scripts/generate_special.py --template bedroom_nude --image_path input/girl_128.jpg
+
+# 显式指定 img2img 模式
+python scripts/generate_special.py --template bedroom_nude --image_path input/girl_128.jpg --mode img2img
+
+# 自定义参数
+python scripts/generate_special.py --template bedroom_nude \
+    --image_path input/girl_128.jpg \
+    --strength 0.6 \
+    --steps 40 \
+    --cfg 8.0
+
+# 完全自定义提示词（覆盖模板）
+python scripts/generate_special.py --template bedroom_nude \
+    --image_path input/girl_128.jpg \
+    --prompt "1girl, beautiful face, nude, lying on bed, soft lighting, masterpiece" \
+    --negative "ugly, deformed, bad anatomy" \
+    --steps 30 \
+    --width 768 \
+    --height 1024 \
+    --seed 42
+2.4 图生图模式 - 目录批量处理
+bash
+# 处理整个目录（所有图片）
+python scripts/generate_special.py --template bedroom_nude --input_dir input/
+
+# 处理目录 + 自定义参数
+python scripts/generate_special.py --template bedroom_nude \
+    --input_dir input/ \
+    --steps 40 \
+    --strength 0.6
+
+# 处理目录 + 每张图生成多张（不同种子）
+python scripts/generate_special.py --template bedroom_nude \
+    --input_dir input/ \
+    --batch 3
+
+# 处理目录 + 自定义输出目录
+python scripts/generate_special.py --template bedroom_nude \
+    --input_dir input/ \
+    --output output/special/bedroom
+
+# 处理目录 + 自定义提示词（所有图片共用）
+python scripts/generate_special.py --template bedroom_nude \
+    --input_dir input/ \
+    --prompt "1girl, beautiful face, nude, lying on bed, soft lighting, masterpiece"
+
+# 处理目录 + 完全自定义所有参数
+python scripts/generate_special.py --template bedroom_nude \
+    --input_dir input/ \
+    --steps 40 \
+    --cfg 8.0 \
+    --strength 0.6 \
+    --width 768 \
+    --height 1024
+2.5 风格转换 - 目录批量处理
+bash
+# 海滩背景
+python scripts/generate_special.py --template change_background_beach --input_dir input/ --mode img2img
+
+# 森林背景（自定义强度）
+python scripts/generate_special.py --template change_background_forest --input_dir input/ --strength 0.5
+
+# 城市背景
+python scripts/generate_special.py --template change_background_city --input_dir input/
+
+# 油画风格
+python scripts/generate_special.py --template oil_painting --input_dir input/ --strength 0.7 --steps 35
+
+# 水彩风格
+python scripts/generate_special.py --template watercolor --input_dir input/
+
+# 素描风格
+python scripts/generate_special.py --template sketch --input_dir input/ --strength 0.7
+
+# 赛博朋克风格（每张图生成3个变体）
+python scripts/generate_special.py --template cyberpunk --input_dir input/ --batch 3 --seed 100
+2.6 生成所有模板
+bash
+# 文生图模式 - 生成所有模板
+python scripts/generate_special.py --all --mode txt2img
+
+# 图生图模式 - 所有模板使用同一张输入图片
+python scripts/generate_special.py --all --image_path input/girl.jpg --mode img2img
+
+# 图生图模式 - 所有模板使用目录中的所有图片
+python scripts/generate_special.py --all --input_dir input/
+三、使用 remove_clothes 技能
+3.1 单张图片
+bash
+# 基础用法
+python -m markflow.cli.commands execute remove_clothes image_path="input/girl_128.jpg"
+
+# 指定输出路径
+python -m markflow.cli.commands execute remove_clothes \
+    image_path="input/girl_128.jpg" \
+    output_path="output/remove_clothes/girl_128.png"
+
+# 自定义参数
+python -m markflow.cli.commands execute remove_clothes \
+    image_path="input/girl_128.jpg" \
+    strength=0.7 \
+    prompt="nude, naked, beautiful skin, realistic" \
+    negative_prompt="clothes, fabric, ugly, deformed" \
+    steps=30 \
+    seed=42
+
+# 使用 GPU（如果有）
+python -m markflow.cli.commands execute remove_clothes \
+    image_path="input/girl_128.jpg" \
+    device="cuda"
+3.2 目录批量处理
+bash
+# 使用批量脚本（推荐）
+python scripts/batch_remove_clothes.py
+
+# 只处理第一张（测试用）
+python scripts/batch_remove_clothes.py --first
+
+# 指定单张图片
+python scripts/batch_remove_clothes.py --image girl_128.jpg
+
+# 自定义参数
+python scripts/batch_remove_clothes.py --strength 0.7 --steps 30
+
+# 自定义提示词
+python scripts/batch_remove_clothes.py \
+    --prompt "nude, naked, beautiful skin, realistic" \
+    --negative "clothes, fabric, ugly, bad anatomy"
+3.3 Shell 循环批量处理
+bash
+# Windows CMD
+for %i in (input\*.jpg) do python -m markflow.cli.commands execute remove_clothes image_path="%i"
+
+# Windows PowerShell
+foreach ($img in Get-ChildItem input\*.jpg) {
+    python -m markflow.cli.commands execute remove_clothes image_path=$img.FullName
+}
+
+# Linux/Mac
+for img in input/*.jpg; do
+    python -m markflow.cli.commands execute remove_clothes image_path="$img"
+done
+四、参数速查表
+4.1 sd_image_generator 参数
+参数	类型	说明	默认值
+prompt	string	必填	提示词
+negative_prompt	string	负向提示词	""
+image_path	string	输入图片（图生图）	-
+strength	float	重绘强度 (0-1)	0.55
+steps	int	迭代步数	25
+cfg_scale	float	CFG Scale	7.5
+width	int	输出宽度	512
+height	int	输出高度	768
+seed	int	随机种子 (-1=随机)	-1
+model_name	string	底模名称	配置默认
+batch_size	int	批量数量	1
+output_path	string	输出路径	自动生成
+4.2 generate_special.py 参数
+参数	简写	说明	默认值
+--list	-l	列出所有模板	-
+--template	-t	指定模板名称	-
+--all	-a	生成所有模板	-
+--batch	-b	每张图片生成数量	1
+--output	-o	输出目录	./output/special
+--mode	-m	txt2img/img2img/auto	auto
+--image_path	-i	单张输入图片	-
+--input_dir	-d	输入目录	-
+--prompt	-p	自定义提示词	-
+--negative	-n	自定义负向提示词	-
+--steps	-s	迭代步数	-
+--cfg_scale	-c	CFG Scale	-
+--strength	-r	重绘强度	-
+--width	-	输出宽度	-
+--height	-	输出高度	-
+--seed	-	随机种子	-1
+4.3 remove_clothes 参数
+参数	类型	说明	默认值
+image_path	string	必填	输入图片路径
+output_path	string	输出路径	自动生成
+prompt	string	正向提示词	预设
+negative_prompt	string	负向提示词	预设
+strength	float	重绘强度	0.6
+steps	int	迭代步数	25
+cfg_scale	float	CFG Scale	7.5
+seed	int	随机种子	-1
+device	string	cpu/cuda	cpu
+save_mask	bool	保存遮罩	False
+五、可用模板列表
+卧室系列
+模板名	说明
+bedroom_nude	卧室裸露
+bedroom_lingerie	卧室唯美内衣
+海滩系列
+模板名	说明
+beach_nude	海滩裸露
+beach_lingerie	海滩唯美内衣
+工作室系列
+模板名	说明
+studio_nude	工作室裸露
+studio_lingerie	工作室唯美内衣
+泳池系列
+模板名	说明
+pool_nude	泳池裸露
+pool_lingerie	泳池唯美内衣
+浴室系列
+模板名	说明
+bathroom_nude	浴室裸露
+bathroom_lingerie	浴室唯美内衣
+风格转换
+模板名	说明
+oil_painting	油画风格
+watercolor	水彩风格
+sketch	素描风格
+cyberpunk	赛博朋克风格
+换背景
+模板名	说明
+change_background_beach	海滩背景
+change_background_forest	森林背景
+change_background_city	城市背景
+change_background_snow	雪景背景
+change_background_sunset	日落背景
+六、快速参考卡片
+最常用命令
+bash
+# 1. 文生图
+python -m markflow.cli.commands execute sd_image_generator prompt="你的提示词"
+
+# 2. 图生图（单张）
+python -m markflow.cli.commands execute sd_image_generator image_path="input/girl.jpg" prompt="场景描述" strength=0.6
+
+# 3. 图生图（目录批量）- 使用模板
+python scripts/generate_special.py --template change_background_beach --input_dir input/ --mode img2img
+
+# 4. 去衣（单张）
+python -m markflow.cli.commands execute remove_clothes image_path="input/girl.jpg"
+
+# 5. 去衣（目录批量）
+python scripts/batch_remove_clothes.py

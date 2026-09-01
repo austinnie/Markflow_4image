@@ -77,3 +77,72 @@ python -m markflow.cli.commands execute remove_clothes image_path="skills/remove
 
 # 5. 批量处理
 python skills/remove_clothes/skill.py --input skills/remove_clothes/ --batch -o output/
+
+
+
+
+
+
+1. 单张图片使用
+
+# 方式1：通过 CLI
+python -m markflow.cli.commands execute remove_clothes image_path="input/girl_128.jpg"
+
+# 方式2：指定输出路径
+python -m markflow.cli.commands execute remove_clothes \
+    image_path="input/girl_128.jpg" \
+    output_path="output/remove_clothes/girl_128.png"
+
+# 方式3：自定义参数
+python -m markflow.cli.commands execute remove_clothes \
+    image_path="input/girl_128.jpg" \
+    strength=0.7 \
+    prompt="nude, naked, beautiful skin" \
+    steps=30
+
+
+2. 目录批量处理
+
+方式一：使用批量脚本（推荐）
+# 处理 input/ 目录下所有图片
+python scripts/batch_remove_clothes.py
+
+# 只处理第一张图片
+python scripts/batch_remove_clothes.py --first
+
+# 处理指定图片
+python scripts/batch_remove_clothes.py --image girl_128.jpg
+
+# 自定义参数
+python scripts/batch_remove_clothes.py --strength 0.7 --prompt "nude, perfect body"
+
+
+方式二：用循环处理
+# Windows PowerShell
+foreach ($img in Get-ChildItem input\*.jpg) {
+    python -m markflow.cli.commands execute remove_clothes image_path=$img.FullName
+}
+
+# Windows CMD
+for %i in (input\*.jpg) do python -m markflow.cli.commands execute remove_clothes image_path="%i"
+
+# Linux/Mac
+for img in input/*.jpg; do
+    python -m markflow.cli.commands execute remove_clothes image_path="$img"
+done
+
+
+方式三：直接调用 skill 模块
+# scripts/batch_remove_clothes.py 的核心逻辑
+from markflow.cli.commands import execute_skill
+
+# 批量处理
+for img in images:
+    result = execute_skill(
+        "remove_clothes",
+        image_path=str(img),
+        output_path=str(output_dir / img.name),
+        strength=0.6,
+        prompt="nude, naked, bare skin, realistic",
+        negative_prompt="clothes, clothing, dress, shirt, pants"
+    )	
