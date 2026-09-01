@@ -1,0 +1,62 @@
+{
+  "name": "change_body_type",
+  "display_name": "改变体型",
+  "description": "改变人物的体型特征，支持丰满、苗条、肌肉型等多种体型",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "体型", "ControlNet"],
+  "dependencies": ["PIL", "torch"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "body_type",
+      "type": "string",
+      "description": "目标体型 (busty/curvy/slim/muscular/athletic/voluptuous/toned)",
+      "required": true
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "变化强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.6
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 30
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子",
+      "required": false,
+      "default": -1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "body_type",
+      "description": "应用的体型"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_strength": 0.6,
+    "default_steps": 30,
+    "default_body_type": "curvy"
+  }
+}

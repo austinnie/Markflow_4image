@@ -1,0 +1,128 @@
+{
+  "name": "remove_clothes",
+  "display_name": "衣服移除",
+  "description": "使用本地 SD Inpaint 模型移除衣服，生成裸露身体。支持 YOLO 自动遮罩和手动绘制遮罩。",
+  "version": "1.0.0",
+  "tags": ["图生图", "人物编辑", "衣服移除", "Inpaint"],
+  "dependencies": ["torch", "diffusers", "transformers", "accelerate", "Pillow", "opencv-python", "ultralytics"],
+  "inputs": [
+    {
+      "name": "image_path",
+      "type": "string",
+      "description": "输入图片路径",
+      "required": true
+    },
+    {
+      "name": "output_path",
+      "type": "string",
+      "description": "输出路径",
+      "required": false
+    },
+    {
+      "name": "prompt",
+      "type": "string",
+      "description": "正向提示词",
+      "required": false,
+      "default": "nude body, beautiful skin, realistic skin texture, natural light, soft shadows, masterpiece, best quality, photorealistic"
+    },
+    {
+      "name": "negative_prompt",
+      "type": "string",
+      "description": "负面提示词",
+      "required": false,
+      "default": "clothes, fabric, ugly, deformed, bad anatomy, extra limbs, missing limbs, bad proportions, blurry, low quality, cartoon, anime"
+    },
+    {
+      "name": "strength",
+      "type": "float",
+      "description": "重绘强度 (0.0-1.0)",
+      "required": false,
+      "default": 0.5
+    },
+    {
+      "name": "steps",
+      "type": "integer",
+      "description": "迭代步数",
+      "required": false,
+      "default": 25
+    },
+    {
+      "name": "seed",
+      "type": "integer",
+      "description": "随机种子 (-1 表示随机)",
+      "required": false,
+      "default": -1
+    },
+    {
+      "name": "model_name",
+      "type": "string",
+      "description": "底模名称",
+      "required": false,
+      "default": "zenityXmix.inpainting.safetensors"
+    },
+    {
+      "name": "seg_method",
+      "type": "string",
+      "description": "分割方法 (yolo/manual/clipseg/sam/grounding_dino)",
+      "required": false,
+      "default": "yolo"
+    },
+    {
+      "name": "save_mask",
+      "type": "boolean",
+      "description": "是否保存遮罩",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "controlnet_type",
+      "type": "string",
+      "description": "ControlNet 类型 (canny/openpose/depth/hed/mlsd/lineart)",
+      "required": false,
+      "default": "canny"
+    },
+    {
+      "name": "use_controlnet",
+      "type": "boolean",
+      "description": "是否启用 ControlNet",
+      "required": false,
+      "default": true
+    },
+    {
+      "name": "cfg_scale",
+      "type": "float",
+      "description": "提示词引导强度",
+      "required": false,
+      "default": 7.5
+    },
+    {
+      "name": "device",
+      "type": "string",
+      "description": "设备 (cpu/cuda)",
+      "required": false,
+      "default": "cpu"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_path",
+      "description": "生成的图片路径"
+    },
+    {
+      "name": "parameters",
+      "description": "使用的参数"
+    },
+    {
+      "name": "generation_time",
+      "description": "生成耗时"
+    }
+  ],
+  "config": {
+    "default_model": "zenityXmix.inpainting.safetensors",
+    "default_steps": 25,
+    "default_strength": 0.5,
+    "default_controlnet_type": "canny",
+    "default_seg_method": "yolo",
+    "use_controlnet": true
+  }
+}
